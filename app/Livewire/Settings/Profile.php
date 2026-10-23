@@ -4,9 +4,7 @@ namespace App\Livewire\Settings;
 
 use App\Concerns\ProfileValidationRules;
 use Flux\Flux;
-/* @chisel-email-verification */
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-/* @end-chisel-email-verification */
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -50,7 +48,6 @@ class Profile extends Component
         Flux::toast(variant: 'success', text: __('Profile updated.'));
     }
 
-    /* @chisel-email-verification */
     /**
      * Send an email verification notification to the current user.
      */
@@ -84,5 +81,4 @@ class Profile extends Component
 
         return ! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail();
     }
-    /* @end-chisel-email-verification */
 }
