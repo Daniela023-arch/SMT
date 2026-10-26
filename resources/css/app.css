@@ -1,4 +1,14 @@
 @import 'tailwindcss';
+
+/* ============================================================
+   SISTEMA DE DISEÑO — INVENTRA
+   Tokens de color, tipografía y utilidades de componentes
+   ============================================================
+
+   Paleta primaria: Azul profundo (hue 262, OKLCH)
+   Tipografía:      Plus Jakarta Sans / Instrument Sans
+   Radio base:      0.875rem
+   ============================================================ */
 @import '../../vendor/livewire/flux/dist/flux.css';
 
 @source '../views';
@@ -9,7 +19,45 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    /* --- Tipografía --- */
+    --font-sans: 'Plus Jakarta Sans', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+                 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* --- Radio base --- */
+    --radius:    0.875rem;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+
+    /* --- Paleta Inventra: Azul profundo (brand) --- */
+    --color-brand-50:  oklch(0.97 0.008 262);
+    --color-brand-100: oklch(0.94 0.016 262);
+    --color-brand-200: oklch(0.88 0.030 262);
+    --color-brand-300: oklch(0.78 0.060 262);
+    --color-brand-400: oklch(0.65 0.090 262);
+    --color-brand-500: oklch(0.52 0.115 262);
+    --color-brand-600: oklch(0.44 0.125 262);
+    --color-brand-700: oklch(0.36 0.130 262);
+    --color-brand-800: oklch(0.28 0.100 262);
+    --color-brand-900: oklch(0.20 0.070 262);
+
+    /* --- Semánticos --- */
+    --color-surface:     oklch(1 0 0);
+    --color-background:  oklch(0.985 0.003 255);
+    --color-foreground:  oklch(0.20 0.030 262);
+    --color-muted:       oklch(0.52 0.020 260);
+    --color-border:      oklch(0.92 0.006 255);
+
+    --color-success:     oklch(0.60 0.150 155);
+    --color-warning:     oklch(0.78 0.150 75);
+    --color-danger:      oklch(0.58 0.220 25);
+    --color-info:        oklch(0.70 0.120 200);
+
+    /* --- Sombras --- */
+    --shadow-nav:  0 1px 3px oklch(0.2 0.03 262 / 8%), 0 4px 12px -4px oklch(0.2 0.03 262 / 10%);
+    --shadow-soft: 0 1px 2px oklch(0.2 0.03 262 / 6%), 0 8px 24px -12px oklch(0.2 0.03 262 / 14%);
+    --shadow-lift: 0 2px 4px oklch(0.2 0.03 262 / 6%), 0 24px 48px -20px oklch(0.25 0.08 262 / 28%);
 
     --color-zinc-50: #fafafa;
     --color-zinc-100: #f5f5f5;
@@ -64,3 +112,197 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* ============================================================
+   TOKENS GLOBALES INVENTRA
+   ============================================================ */
+
+:root {
+    --inventra-primary:      oklch(0.36 0.130 262);
+    --inventra-primary-text: oklch(0.99 0.000 0);
+    --inventra-radius:       0.875rem;
+    --inventra-nav-h:        3.5rem;   /* 56px — header height portal */
+    --inventra-pubh:         4rem;     /* 64px — header height público */
+}
+
+/* Fuente global Inventra */
+body.inventra-public,
+body.inventra-portal {
+    font-family: 'Plus Jakarta Sans', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-color: oklch(0.985 0.003 255);
+    color: oklch(0.20 0.030 262);
+}
+
+/* ============================================================
+   UTILIDADES DE COMPONENTES — SITE PÚBLICO
+   ============================================================ */
+
+/* Nav link público */
+.inventra-nav-link {
+    @apply relative whitespace-nowrap rounded-lg px-3 py-1.5
+           text-sm font-medium text-slate-600
+           hover:text-brand-700 hover:bg-brand-50
+           transition-colors duration-150;
+}
+.inventra-nav-link--active {
+    @apply text-brand-700 bg-brand-50;
+}
+.inventra-nav-link--active::after {
+    content: '';
+    @apply absolute left-3 right-3 bottom-[-1px] h-[2px] rounded-t-full bg-brand-700;
+}
+
+/* Botones públicos */
+.inventra-btn {
+    @apply inline-flex items-center justify-center gap-2
+           rounded-lg px-4 py-2 text-sm font-semibold
+           transition-all duration-150 focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+}
+.inventra-btn--primary {
+    @apply bg-brand-700 text-white
+           hover:bg-brand-600 active:bg-brand-800
+           shadow-sm;
+}
+.inventra-btn--secondary {
+    @apply border border-brand-200 bg-white text-brand-700
+           hover:bg-brand-50 active:bg-brand-100;
+}
+.inventra-btn--ghost {
+    @apply text-slate-600 hover:text-brand-700 hover:bg-brand-50;
+}
+.inventra-btn--danger {
+    @apply bg-red-600 text-white hover:bg-red-700 shadow-sm;
+}
+
+/* Toggle mobile público */
+.inventra-mobile-toggle {
+    @apply flex items-center justify-center rounded-lg p-2
+           text-slate-600 hover:bg-slate-100 transition-colors;
+}
+
+/* Sección pública genérica */
+.inventra-main {
+    min-height: calc(100vh - var(--inventra-pubh) - 20rem);
+}
+
+/* Cards públicas */
+.inventra-card {
+    @apply rounded-[var(--inventra-radius)] border border-slate-200 bg-white p-6
+           transition-all duration-200
+           hover:-translate-y-0.5;
+    box-shadow: var(--shadow-soft);
+}
+.inventra-card:hover {
+    box-shadow: var(--shadow-lift);
+}
+
+/* ============================================================
+   UTILIDADES DE COMPONENTES — PORTAL PRIVADO
+   ============================================================ */
+
+/* Nav link portal (nivel 1) */
+.inventra-portal-nav-link {
+    @apply relative whitespace-nowrap rounded-lg px-3 py-1.5
+           text-sm font-medium text-slate-600
+           hover:text-brand-700 hover:bg-brand-50
+           transition-colors duration-150;
+}
+.inventra-portal-nav-link--active {
+    @apply text-brand-700 font-semibold;
+}
+.inventra-portal-nav-link--active::after {
+    content: '';
+    @apply absolute inset-x-2 rounded-t-full bg-brand-700;
+    bottom: -9px;
+    height: 2px;
+}
+
+/* Barra de módulos (nivel 2) */
+.inventra-subnav-item {
+    @apply relative flex shrink-0 items-center gap-1.5
+           whitespace-nowrap rounded-lg px-3 py-1.5
+           text-sm font-medium text-slate-500
+           hover:text-brand-700 hover:bg-brand-50
+           transition-all duration-150;
+}
+.inventra-subnav-item--active {
+    @apply text-brand-700 bg-brand-50;
+}
+.inventra-subnav-item--active::after {
+    content: '';
+    @apply absolute inset-x-2 rounded-t-full bg-brand-700;
+    bottom: -0.5px;
+    height: 2px;
+}
+.inventra-subnav-arrow {
+    @apply absolute z-10 flex h-7 w-7 items-center justify-center
+           rounded-full border border-slate-200 bg-white
+           text-slate-500 shadow-sm
+           hover:border-brand-300 hover:text-brand-700
+           transition-all duration-150;
+}
+
+/* Botón icono (portal) */
+.inventra-icon-btn {
+    @apply flex items-center justify-center rounded-lg p-2
+           text-slate-500 hover:bg-slate-100 hover:text-brand-700
+           transition-colors duration-150;
+}
+
+/* Dropdown item */
+.inventra-dropdown-item {
+    @apply flex w-full items-center gap-2.5 rounded-lg px-3 py-2
+           text-sm font-medium text-slate-700
+           hover:bg-slate-50 hover:text-brand-700
+           transition-colors duration-150;
+}
+
+/* KPI Cards */
+.inventra-kpi-card {
+    @apply rounded-[var(--inventra-radius)] border border-slate-200 bg-white p-5
+           transition-shadow;
+    box-shadow: var(--shadow-soft);
+}
+.inventra-kpi-card:hover {
+    box-shadow: var(--shadow-lift);
+}
+.inventra-kpi-value {
+    @apply text-2xl font-bold text-slate-800 tabular-nums;
+}
+.inventra-kpi-label {
+    @apply mt-1 text-xs font-medium text-slate-500;
+}
+.inventra-kpi-icon {
+    @apply flex h-10 w-10 items-center justify-center
+           rounded-xl bg-brand-50 text-brand-600;
+}
+
+/* Tabla estilo portal */
+.inventra-table       { @apply w-full border-collapse text-sm; }
+.inventra-table th    { @apply border-b border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
+.inventra-table td    { @apply border-b border-slate-100 px-4 py-3 text-slate-700; }
+.inventra-table tr:last-child td { @apply border-b-0; }
+.inventra-table tbody tr { @apply hover:bg-brand-50 transition-colors duration-100; }
+
+/* Badges de estado */
+.inventra-badge         { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold leading-none; }
+.inventra-badge--success { @apply bg-emerald-100 text-emerald-700; }
+.inventra-badge--warning { @apply bg-amber-100   text-amber-700; }
+.inventra-badge--danger  { @apply bg-red-100     text-red-700; }
+.inventra-badge--info    { @apply bg-blue-100    text-blue-700; }
+.inventra-badge--neutral { @apply bg-slate-100   text-slate-600; }
+
+/* Animaciones */
+@keyframes inventra-fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+.inventra-animate-in {
+    animation: inventra-fade-up 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* No scrollbar helper */
+.no-scrollbar              { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
