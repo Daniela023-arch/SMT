@@ -12,7 +12,11 @@ class EnsureActiveUser
     {
         $user = $request->user();
 
-        if ($user !== null && ! $user->activo) {
+        $isActive = $user !== null
+            ? $user->newQuery()->whereKey($user->getKey())->value('activo')
+            : true;
+
+        if ($user !== null && ! $isActive) {
             abort(Response::HTTP_FORBIDDEN, 'Tu cuenta está desactivada.');
         }
 

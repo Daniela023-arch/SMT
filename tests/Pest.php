@@ -18,6 +18,9 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
+pest()->use(Tests\Support\CreatesServiceFixtures::class)
+    ->in('Feature/Services');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

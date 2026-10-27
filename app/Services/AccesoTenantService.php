@@ -30,7 +30,9 @@ class AccesoTenantService
 
     public function tienePermiso(User $usuario, string $clave, ?int $tenantId): bool
     {
-        if (!$usuario->activo) return false;
+        if (! $usuario->exists || ! $usuario->newQuery()->whereKey($usuario->getKey())->value('activo')) {
+            return false;
+        }
         return DB::table('usuario_rol as ur')
             ->join('roles as r', 'r.id', '=', 'ur.rol_id')
             ->join('rol_permiso as rp', 'rp.rol_id', '=', 'r.id')
