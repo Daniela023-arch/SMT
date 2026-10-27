@@ -18,6 +18,7 @@ class EnsureSubscriptionActive
             ->whereIn('estado', ['activa', 'activo', 'prueba'])
             ->where('inicio_at', '<=', now())
             ->where(fn ($query) => $query->whereNull('fin_at')->orWhere('fin_at', '>=', now()))
+            ->whereHas('plan', fn ($query) => $query->where('activo', true))
             ->exists();
 
         if (! $hasSubscription) {
