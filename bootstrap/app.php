@@ -4,6 +4,14 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\EnsureActiveUser;
+use App\Http\Middleware\EnsureInventoryType;
+use App\Http\Middleware\EnsureModuleEnabled;
+use App\Http\Middleware\EnsureSubscriptionActive;
+use App\Http\Middleware\EnsureTenant;
+use App\Http\Middleware\EnsureTenantActive;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,7 +20,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'active' => EnsureActiveUser::class,
+            'tenant' => EnsureTenant::class,
+            'tenant.active' => EnsureTenantActive::class,
+            'subscription.active' => EnsureSubscriptionActive::class,
+            'module' => EnsureModuleEnabled::class,
+            'inventory.type' => EnsureInventoryType::class,
+            'role' => CheckRole::class,
+            'permission' => CheckPermission::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
