@@ -33,8 +33,76 @@ Desarrollar un sistema web de gestión y control de inventarios multi-tenant, ut
 
 \section{Alcance}
 
+\subsection{Arquitectura y Plataforma Multi-Tenant}
+
+\begin{itemize}
+    \item \textbf{Aislamiento Multi-Tenant:} La plataforma permitirá gestionar múltiples inventarios de manera totalmente independiente sobre una misma infraestructura física y base de datos compartida, utilizando filtrado de seguridad por clave de tenant (\texttt{tenant\_id}).
+
+    \item \textbf{Patrón de Arquitectura:} Implementación de un patrón MVC extendido mediante una Capa de Servicios dedicada a concentrar las reglas de negocio, validaciones e idempotencia.
+
+    \item \textbf{Módulos Adaptables:} Soporte para los tipos de inventarios predefinidos (Abarrotes, Farmacia, Biblioteca, Papelería y Equipos Electrónicos).
+\end{itemize}
+
+\subsection{Gestión de Pagos y Suscripciones de Tenants}
+
+\begin{itemize}
+    \item \textbf{Suscripción y Mantenimiento del Servicio:} Integración de un módulo de pagos para que el Administrador del tenant pueda realizar el pago por el uso de la plataforma.
+
+    \item \textbf{Control Automático de Vigencia:} Control y suspensión automática o manual del acceso al inventario y credenciales según la vigencia del pago registrado.
+\end{itemize}
+
+\subsection{Gestión de Usuarios y Accesos (RBAC)}
+
+\begin{itemize}
+    \item \textbf{Roles Granulares:} Implementación de un control de acceso basado en roles con perfiles como: Superadministrador, Administrador de Inventario, Encargado de Almacén, Encargado de Ventas/Préstamos y Encargado Técnico.
+
+    \item \textbf{Seguridad y Flujo de Invitación:} Registro de solicitudes públicas, generación de credenciales con contraseña temporal obligatoria de primer cambio y hashing seguro para el almacenamiento de contraseñas.
+\end{itemize}
+
+\subsection{Funcionalidades Operativas y Módulos}
+
+\begin{itemize}
+    \item \textbf{Punto de Venta (POS) e Idempotencia:} Procesamiento de ventas en tiempo real con descuento automático de existencias y mecanismos de idempotencia en backend para evitar duplicidad de transacciones.
+
+    \item \textbf{Mantenimiento y Trazabilidad (Escaneo QR / Barras):} Módulo para captura y consulta de productos mediante lectura de códigos de barras y códigos QR, permitiendo a encargados técnicos registrar servicios de mantenimiento y cambios de estado.
+
+    \item \textbf{Carga Masiva y Exportación:} Soporte para la importación del catálogo inicial a través de archivos de plantilla CSV.
+
+    \item \textbf{Personalización por Tenant:} Capacidad para que el Administrador modifique la identidad visual de su inventario (subida de logotipo, selección de paleta de colores y tema claro/oscuro) y habilite/deshabilite módulos permitidos.
+
+    \item \textbf{Políticas de Soft Delete:} Aplicación de desactivación lógica (\textit{Soft Delete}) en lugar de eliminación física para tenants, productos y usuarios, preservando el historial y la auditabilidad.
+\end{itemize}
+
 
 \section{Limitación}
+
+\subsection{Facturación Electrónica Fiscal}
+
+\begin{itemize}
+    \item \textbf{Comprobantes No Fiscales:} No se generarán timbrados ni facturas fiscales oficiales conectadas a organismos tributarios; únicamente se expedirán comprobantes de venta o tickets de carácter informativo interno.
+\end{itemize}
+
+\subsection{Restricciones del Multi-Tenant e Inmutabilidad}
+
+\begin{itemize}
+    \item \textbf{Inmutabilidad del Tipo de Tenant:} Un administrador no podrá cambiar el tipo de inventario asignado originalmente por el Superadministrador una vez creado el registro.
+
+    \item \textbf{Incompatibilidad Trans-Tenant:} No habrá comunicación, traspaso directo de mercancía ni intercambio de datos entre diferentes tenants o cuentas de inventarios.
+\end{itemize}
+
+\subsection{Hardware y Entorno Offline}
+
+\begin{itemize}
+    \item \textbf{Dependencia de Conectividad:} El sistema funcionará exclusivamente como una aplicación web en línea; no contará con modo fuera de línea (offline) ni sincronización posterior.
+
+    \item \textbf{Integración de Hardware Limitada:} El escaneo de códigos de barras y códigos QR dependerá del hardware del cliente (lectores USB plug-and-play o la cámara nativa del dispositivo); el sistema no incluirá controladores (drivers) nativos para impresoras térmicas específicas ni periféricos industriales.
+\end{itemize}
+
+\subsection{Personalización Estructural de Datos}
+
+\begin{itemize}
+    \item \textbf{Esquema de Base de Datos Fijo:} Los campos personalizados por producto se limitarán a atributos predefinidos simples (texto, número, fecha, sí/no), sin posibilidad de alterar la estructura física de las tablas del motor de base de datos en tiempo de ejecución.
+\end{itemize}
 
 \section{Problemática}
 
