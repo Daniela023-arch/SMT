@@ -45,6 +45,13 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withPivot('tenant_id');
     }
 
+    public function establecimientos(): BelongsToMany
+    {
+        return $this->belongsToMany(Establecimiento::class, 'usuario_establecimiento', 'usuario_id', 'establecimiento_id')
+            ->withPivot(['tenant_id', 'asignado_por'])
+            ->withTimestamps();
+    }
+
     /**
      * Get the attributes that should be cast.
      *

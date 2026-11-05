@@ -4,6 +4,8 @@ namespace Tests\Support;
 
 use App\Models\ConfiguracionInventario;
 use App\Models\Existencia;
+use App\Models\Establecimiento;
+use App\Models\Rol;
 use App\Models\PlanSuscripcion;
 use App\Models\Producto;
 use App\Models\SuscripcionTenant;
@@ -11,6 +13,9 @@ use App\Models\Tenant;
 use App\Models\TipoInventario;
 use App\Models\Ubicacion;
 use App\Models\UnidadInventario;
+use App\Models\User;
+use App\Services\EstablecimientoService;
+use Illuminate\Support\Facades\DB;
 
 trait CreatesServiceFixtures
 {
@@ -85,5 +90,43 @@ trait CreatesServiceFixtures
             'ubicacion_id' => $ubicacion->getKey(),
             'estado' => 'disponible',
         ], $attributes));
+    }
+
+    protected function serviceEstablishment(Tenant $tenant, string $type = 'sucursal', ?string $code = null): Establecimiento
+    {
+        return app(EstablecimientoService::class)->crear($tenant->getKey(), [
+            'codigo' => $code ?? strtoupper(substr(uniqid(), -6)),
+            'nombre' => 'Establecimiento de prueba',
+            'tipo' => $type,
+        ]);
+    }
+
+    protected function serviceWarehouse(Tenant $tenant, Establecimiento $establishment, ?string $code = null): \App\Models\Almacen
+    {
+        return app(EstablecimientoService::class)->crearAlmacen(
+            $tenant->getKey(),
+            $establishment->getKey(),
+            $code ?? strtoupper(substr(uniqid(), -6)),
+            'Almacén de prueba',
+        );
+    }
+
+    protected function serviceRoleUser(Tenant $tenant, string $slug): User
+    {
+        $user = User::factory()->create(['tenant_id' => $tenant->getKey()]);
+        $role = Rol::query()->create([
+            'tenant_id' => $tenant->getKey(),
+            'nombre' => ucfirst($slug),
+            'slug' => $slug,
+            'es_sistema' => false,
+        ]);
+
+        DB::table('usuario_rol')->insert([
+            'usuario_id' => $user->getKey(),
+            'rol_id' => $role->getKey(),
+            'tenant_id' => $tenant->getKey(),
+        ]);
+
+        return $user;
     }
 }

@@ -13,13 +13,18 @@ class AccesoTenantService
             $usuario = User::query()->lockForUpdate()->findOrFail($usuarioId);
             $rol = Rol::query()->findOrFail($rolId);
             if ($tenantId === null) {
-                if ($rol->tenant_id !== null || !$rol->es_sistema) {
-                    throw ValidationException::withMessages(['rol' => 'Solo un rol global del sistema puede asignarse sin tenant.']);
+                if ($usuario->tenant_id !== null || $rol->tenant_id !== null || ! $rol->es_sistema || $rol->slug !== 'superadmin') {
+                    throw ValidationException::withMessages(['rol' => 'Solo el rol global superadmin puede asignarse a una cuenta sin tenant.']);
                 }
             } else {
                 Tenant::query()->findOrFail($tenantId);
-                if ((int) $usuario->tenant_id !== $tenantId || (int) $rol->tenant_id !== $tenantId || $rol->es_sistema) {
-                    throw ValidationException::withMessages(['rol' => 'Usuario y rol deben pertenecer al mismo tenant.']);
+                if (
+                    (int) $usuario->tenant_id !== $tenantId
+                    || (int) $rol->tenant_id !== $tenantId
+                    || $rol->es_sistema
+                    || ! in_array($rol->slug, ['admin', 'ventas', 'almacen'], true)
+                ) {
+                    throw ValidationException::withMessages(['rol' => 'Usuario y rol deben pertenecer al mismo tenant y usar uno de sus tres roles operativos.']);
                 }
             }
             return UsuarioRol::query()->firstOrCreate([
@@ -41,9 +46,11 @@ class AccesoTenantService
             ->where('p.clave', $clave)
             ->where(function ($q) use ($tenantId) {
                 if ($tenantId !== null) {
-                    $q->where(fn ($tenant) => $tenant->where('ur.tenant_id', $tenantId)->where('r.tenant_id', $tenantId));
+                    $q->where(fn ($tenant) => $tenant->where('ur.tenant_id', $tenantId)
+                        ->where('r.tenant_id', $tenantId)
+                        ->whereIn('r.slug', ['admin', 'ventas', 'almacen']));
                 } else {
-                    $q->whereNull('ur.tenant_id')->whereNull('r.tenant_id')->where('r.es_sistema', true);
+                    $q->whereNull('ur.tenant_id')->whereNull('r.tenant_id')->where('r.es_sistema', true)->where('r.slug', 'superadmin');
                 }
             })->exists();
     }

@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/solicitar")({
   validateSearch: (s: Record<string, unknown>): { plan?: string } => (typeof s["plan"] === "string" ? { plan: s["plan"] } : {}),
   head: () => ({ meta: [
-    { title: "Solicitar sistema — Inventra" },
-    { name: "description", content: "Solicita la contratación de Inventra para tu negocio. Revisaremos tu solicitud y te contactaremos." },
-    { property: "og:title", content: "Solicitar sistema — Inventra" },
-    { property: "og:description", content: "Formulario de solicitud para nuevos negocios en Inventra." },
+    { title: "Solicitar sistema — MULTIVERSE" },
+    { name: "description", content: "Solicita la contratación de MULTIVERSE para tu negocio. Revisaremos tu solicitud y te contactaremos." },
+    { property: "og:title", content: "Solicitar sistema — MULTIVERSE" },
+    { property: "og:description", content: "Formulario de solicitud para nuevos negocios en MULTIVERSE." },
   ] }),
   component: Solicitar,
 });
@@ -75,12 +75,12 @@ function Solicitar() {
             <h1 className="text-3xl font-bold tracking-tight">Solicitar mi sistema</h1>
             <p className="mt-1 text-muted-foreground">Completa los datos y revisaremos tu solicitud.</p>
             <div className="mt-8 grid gap-5 md:grid-cols-2">
-              {field("negocio", "Nombre del negocio", <Input id="negocio" onChange={(e) => set("negocio", e.target.value)} placeholder="Farmacia Vida Sana" />)}
+              {field("negocio", "Nombre del negocio", <Input id="negocio" onChange={(e) => set("negocio", e.target.value)} placeholder="Ferretería Los Pinos" />)}
               {field("responsable", "Nombre del responsable", <Input id="responsable" onChange={(e) => set("responsable", e.target.value)} placeholder="Luis Márquez" />)}
               {field("email", "Correo electrónico", <Input id="email" type="email" onChange={(e) => set("email", e.target.value)} placeholder="contacto@negocio.mx" />)}
               {field("telefono", "Teléfono", <Input id="telefono" onChange={(e) => set("telefono", e.target.value)} placeholder="55 1234 5678" />)}
             </div>
-            <div className="mt-6">{field("tipo", "Tipo de inventario", (
+            <div className="mt-6">{field("tipo", "Sector", (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">{(Object.keys(INV_TYPES) as InvType[]).map((k) => { const T = INV_TYPES[k]; return (
                 <button type="button" key={k} onClick={() => set("tipo", k)} className={cn("flex flex-col items-center gap-2 rounded-xl border p-3 text-xs font-semibold transition-all", f["tipo"] === k ? "border-primary bg-accent text-primary" : "border-border hover:border-foreground/30")}><T.icon className="h-5 w-5" strokeWidth={1.6} />{T.label}</button>); })}</div>))}</div>
             <div className="mt-6">{field("plan", "Plan solicitado", (

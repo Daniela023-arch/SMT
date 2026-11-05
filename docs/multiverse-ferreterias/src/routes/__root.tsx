@@ -56,8 +56,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Inventra — Inventarios inteligentes para tu negocio" },
-      { name: "description", content: "Plataforma SaaS multi-tenant para administrar inventarios de bibliotecas, abarrotes, papelerías, farmacias y equipos electrónicos." },
+      { title: "MULTIVERSE — Inventarios inteligentes para tu negocio" },
+      { name: "description", content: "Plataforma SaaS multi-tenant para administrar inventarios de ferreterías con múltiples sucursales y centros de distribución." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

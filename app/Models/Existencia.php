@@ -21,6 +21,7 @@ class Existencia extends Model
 
     protected $fillable = [
         'tenant_id',
+        'almacen_id',
         'producto_id',
         'ubicacion_id',
         'lote_id',
@@ -39,6 +40,11 @@ class Existencia extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');
+    }
+
+    public function almacen(): BelongsTo
+    {
+        return $this->belongsTo(Almacen::class);
     }
 
     public function producto(): BelongsTo

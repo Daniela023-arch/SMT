@@ -12,6 +12,8 @@ class StockMovimiento extends Model
 
     protected $fillable = [
         'tenant_id',
+        'almacen_origen_id',
+        'almacen_destino_id',
         'producto_id',
         'lote_id',
         'unidad_inventario_id',
@@ -35,6 +37,16 @@ class StockMovimiento extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');
+    }
+
+    public function almacenOrigen(): BelongsTo
+    {
+        return $this->belongsTo(Almacen::class, 'almacen_origen_id');
+    }
+
+    public function almacenDestino(): BelongsTo
+    {
+        return $this->belongsTo(Almacen::class, 'almacen_destino_id');
     }
     public function producto(): BelongsTo
     {

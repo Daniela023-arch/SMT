@@ -45,6 +45,16 @@ class Tenant extends Model
         return $this->hasMany(User::class, 'tenant_id');
     }
 
+    public function establecimientos(): HasMany
+    {
+        return $this->hasMany(Establecimiento::class);
+    }
+
+    public function configuracionTenant(): HasOne
+    {
+        return $this->hasOne(ConfiguracionTenant::class);
+    }
+
     public function roles(): HasMany
     {
         return $this->hasMany(Rol::class, 'tenant_id');

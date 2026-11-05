@@ -5,7 +5,7 @@ import {
   LayoutDashboard, PlusCircle, Boxes, Users, Puzzle, BarChart3, CreditCard, Repeat, Megaphone, Settings, Building2, Clock,
   CheckCircle2, AlertTriangle, DollarSign, UserCheck, Search, Check, X, Eye, Lock, KeyRound, Mail,
 } from "lucide-react";
-import { Shell, PageHeader, Panel, Kpi, Status, useGuard, Empty } from "@/components/inventra/Shell";
+import { Shell, PageHeader, Panel, Kpi, Status, useGuard, Empty } from "@/components/multiverse/Shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,10 +19,10 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/superadmin")({
   head: () => ({ meta: [
-    { title: "Panel global — Inventra" },
+    { title: "Panel global — MULTIVERSE" },
     { name: "description", content: "Dashboard del Superadministrador: tenants, solicitudes, módulos y suscripciones." },
-    { property: "og:title", content: "Panel global — Inventra" },
-    { property: "og:description", content: "Administración global de la plataforma Inventra." },
+    { property: "og:title", content: "Panel global — MULTIVERSE" },
+    { property: "og:description", content: "Administración global de la plataforma MULTIVERSE." },
   ] }),
   component: Super,
 });
@@ -46,7 +46,7 @@ function Super() {
   if (!s) return null;
   return (
     <Shell main={(Object.keys(GROUPS) as G[]).map((k) => ({ id: k, label: GROUPS[k].label }))} mainActive={g}
-      onMain={(id) => { setG(id as G); setCat(GROUPS[id as G].cats[0]!.id); }} cats={GROUPS[g].cats} catActive={cat} onCat={setCat} context="Inventra · Global">
+      onMain={(id) => { setG(id as G); setCat(GROUPS[id as G].cats[0]!.id); }} cats={GROUPS[g].cats} catActive={cat} onCat={setCat} context="MULTIVERSE · Global">
       {cat === "dashboard" && <Dashboard go={setCat} />}
       {cat === "nuevo" && <NuevoTenant />}
       {cat === "inventarios" && <Inventarios />}
@@ -56,14 +56,14 @@ function Super() {
       {cat === "planes" && <Planes />}
       {cat === "suscripciones" && <Suscripciones />}
       {cat === "promociones" && <Promos />}
-      {cat === "config" && <Panel title="Configuración de la plataforma"><div className="grid gap-4 md:grid-cols-2">{["Nombre comercial", "Correo de soporte", "Zona horaria"].map((l, i) => <div key={l} className="space-y-1.5"><Label>{l}</Label><Input defaultValue={["Inventra", "soporte@inventra.mx", "America/Mexico_City"][i]} /></div>)}</div><Button className="mt-4" onClick={() => toast.success("Configuración guardada")}>Guardar</Button></Panel>}
+      {cat === "config" && <Panel title="Configuración de la plataforma"><div className="grid gap-4 md:grid-cols-2">{["Nombre comercial", "Correo de soporte", "Zona horaria"].map((l, i) => <div key={l} className="space-y-1.5"><Label>{l}</Label><Input defaultValue={["MULTIVERSE", "soporte@multiverse.mx", "America/Mexico_City"][i]} /></div>)}</div><Button className="mt-4" onClick={() => toast.success("Configuración guardada")}>Guardar</Button></Panel>}
     </Shell>
   );
 }
 
 function Dashboard({ go }: { go: (c: string) => void }) {
   const { tenants } = useSession();
-  const dist = (Object.keys(INV_TYPES) as InvType[]).map((k, i) => ({ name: INV_TYPES[k].label, value: [16, 21, 12, 15, 10][i] }));
+  const dist = (Object.keys(INV_TYPES) as InvType[]).map((k) => ({ name: INV_TYPES[k].label, value: tenants.length }));
   return (<>
     <PageHeader title="Dashboard global" subtitle="Lunes 26 de octubre de 2026 · Resumen de la plataforma" actions={<Button onClick={() => go("nuevo")}><PlusCircle className="mr-2 h-4 w-4" />Crear tenant</Button>} />
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
@@ -75,7 +75,7 @@ function Dashboard({ go }: { go: (c: string) => void }) {
       <Kpi label="Ingresos (oct)" value="$118 k" hint="MXN, ficticio" icon={DollarSign} tone="success" />
     </div>
     <div className="mt-6 grid gap-6 lg:grid-cols-3">
-      <Panel title="Crecimiento de tenants" className="lg:col-span-2"><div className="h-64"><ResponsiveContainer><AreaChart data={GROWTH}><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--chart-1)" stopOpacity={0.25} /><stop offset="1" stopColor="var(--chart-1)" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} /><XAxis dataKey="m" tickLine={false} axisLine={false} fontSize={12} /><YAxis tickLine={false} axisLine={false} fontSize={12} width={30} /><Tooltip /><Area dataKey="tenants" stroke="var(--chart-1)" strokeWidth={2.5} fill="url(#g1)" /></AreaChart></ResponsiveContainer></div></Panel>
+      <Panel title="Crecimiento de tenants" className="lg:col-span-2"><div className="h-64"><ResponsiveContainer><AreaChart data={GROWTH}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} /><XAxis dataKey="m" tickLine={false} axisLine={false} fontSize={12} /><YAxis tickLine={false} axisLine={false} fontSize={12} width={30} /><Tooltip /><Area dataKey="tenants" stroke="var(--chart-1)" strokeWidth={2.5} fill="none" /></AreaChart></ResponsiveContainer></div></Panel>
       <Panel title="Tenants por tipo"><div className="h-48"><ResponsiveContainer><PieChart><Pie data={dist} dataKey="value" innerRadius={50} outerRadius={80} paddingAngle={3}>{dist.map((_, i) => <Cell key={i} fill={PIE[i]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
         <div className="mt-2 grid grid-cols-2 gap-1 text-xs">{dist.map((d, i) => <span key={d.name} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: PIE[i] }} />{d.name} · {d.value}</span>)}</div></Panel>
       <Panel title="Ingresos por suscripciones (miles MXN)" className="lg:col-span-2"><div className="h-56"><ResponsiveContainer><BarChart data={GROWTH}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} /><XAxis dataKey="m" tickLine={false} axisLine={false} fontSize={12} /><YAxis tickLine={false} axisLine={false} fontSize={12} width={30} /><Tooltip /><Bar dataKey="ingresos" fill="var(--chart-2)" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div></Panel>
@@ -85,12 +85,12 @@ function Dashboard({ go }: { go: (c: string) => void }) {
         <li className="flex gap-3 rounded-xl bg-accent p-3"><Mail className="h-4 w-4 shrink-0 text-primary" />4 invitaciones sin aceptar</li></ul></Panel>
       <Panel title="Solicitudes pendientes" className="lg:col-span-2" action={<Button variant="ghost" size="sm" onClick={() => go("nuevo")}>Ver todas</Button>}>
         <div className="divide-y divide-border">{REQUESTS.filter((r) => r.status === "Pendiente" || r.status === "En revisión").map((r) => { const T = INV_TYPES[r.type]; return <div key={r.folio} className="flex items-center gap-3 py-3"><span className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-primary"><T.icon className="h-4 w-4" /></span><div className="flex-1"><div className="text-sm font-semibold">{r.biz}</div><div className="text-xs text-muted-foreground">{r.folio} · {r.plan}</div></div><Status s={r.status} /></div>; })}</div></Panel>
-      <Panel title="Actividad reciente"><ul className="space-y-3 text-sm">{[["Tenant creado", "Mini Súper La Esquina", "hace 2 h"], ["Módulo habilitado", "Lotes · Farmacia San Rafael", "hace 5 h"], ["Plan renovado", "Biblioteca Juan Rulfo", "ayer"], ["Solicitud rechazada", "Soporte TI Hidalgo", "hace 2 días"]].map(([a, b, c]) => <li key={b} className="flex gap-3"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" /><div><div className="font-medium">{a}</div><div className="text-xs text-muted-foreground">{b} · {c}</div></div></li>)}</ul></Panel>
+      <Panel title="Actividad reciente"><ul className="space-y-3 text-sm">{[["Tenant creado", "Ferretería Los Pinos", "hace 2 h"], ["Módulo habilitado", "Transferencias · Ferretería Alfa", "hace 5 h"], ["Plan renovado", "Ferretería Beta", "ayer"], ["Solicitud rechazada", "Soporte TI Hidalgo", "hace 2 días"]].map(([a, b, c]) => <li key={b} className="flex gap-3"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" /><div><div className="font-medium">{a}</div><div className="text-xs text-muted-foreground">{b} · {c}</div></div></li>)}</ul></Panel>
     </div>
   </>);
 }
 
-const STEPS = ["Datos del negocio", "Tipo de inventario", "Plan y vigencia", "Módulos", "Administrador", "Resumen"];
+const STEPS = ["Datos del negocio", "Sector", "Plan y vigencia", "Módulos", "Administrador", "Resumen"];
 
 function NuevoTenant() {
   const [reqs, setReqs] = useState(REQUESTS);
@@ -100,7 +100,7 @@ function NuevoTenant() {
   const [reject, setReject] = useState<string | null>(null);
   const rows = reqs.filter((r) => (filter === "Todas" || r.status === filter) && (r.biz + r.folio + r.owner).toLowerCase().includes(q.toLowerCase()));
   return (<>
-    <PageHeader title="Nuevo tenant" subtitle="Gestiona solicitudes y crea espacios de trabajo." actions={<Button onClick={() => setWizard({ biz: "", owner: "", type: "abarrotes", plan: "Mensual" })}><PlusCircle className="mr-2 h-4 w-4" />Crear sin solicitud</Button>} />
+    <PageHeader title="Nuevo tenant" subtitle="Gestiona solicitudes y crea espacios de trabajo." actions={<Button onClick={() => setWizard({ biz: "", owner: "", type: "ferreteria", plan: "Mensual" })}><PlusCircle className="mr-2 h-4 w-4" />Crear sin solicitud</Button>} />
     <Panel>
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap gap-2">{["Todas", "Pendiente", "En revisión", "Aprobada", "Rechazada"].map((f) => <button key={f} onClick={() => setFilter(f)} className={cn("rounded-full border px-3 py-1.5 text-sm font-medium transition-colors", filter === f ? "border-foreground bg-foreground text-background" : "border-border hover:border-foreground/40")}>{f}</button>)}</div>
@@ -156,7 +156,7 @@ function Wizard({ init, onClose, onDone }: { init: { biz: string; owner: string;
 function Inventarios() {
   const { tenants } = useSession();
   return (<>
-    <PageHeader title="Tipos de inventario" subtitle="Datos agregados. La información operativa de cada tenant es privada." />
+    <PageHeader title="Solución ferretera" subtitle="Datos agregados. La información operativa de cada tenant es privada." />
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{(Object.keys(INV_TYPES) as InvType[]).map((k, i) => { const T = INV_TYPES[k]; const ts = tenants.filter((t) => t.type === k); return (
       <Panel key={k}><div className="flex items-center gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent text-primary"><T.icon className="h-6 w-6" strokeWidth={1.5} /></span><div><h3 className="font-bold">{T.label}</h3><p className="text-xs text-muted-foreground">{[16, 21, 12, 15, 10][i]} tenants · {[140, 88, 61, 104, 219][i]} usuarios</p></div></div>
         <div className="mt-4 flex flex-wrap gap-1.5">{Object.values(MODULES).filter((m) => m.compat.includes(k)).map((m) => <span key={m.name} className="rounded-full bg-muted px-2.5 py-1 text-xs">{m.name}</span>)}</div>
@@ -167,12 +167,12 @@ function Inventarios() {
 
 function Usuarios() {
   const [users, setUsers] = useState([
-    { n: "Mariana Torres", e: "admin@farmaciasanrafael.mx", r: "Administrador", t: "Farmacia San Rafael", s: "Activo" },
-    { n: "Ramón Aguilar", e: "admin@bibliotecarulfo.mx", r: "Administrador", t: "Biblioteca Juan Rulfo", s: "Activo" },
-    { n: "Guadalupe Hernández", e: "admin@donalupita.mx", r: "Administrador", t: "Abarrotes Doña Lupita", s: "Activo" },
-    { n: "Iván Salas", e: "ivan@inventra.mx", r: "Superadministrador", t: "Global", s: "Activo" },
+    { n: "Mariana Torres", e: "admin@ferreteriaalfa.mx", r: "Administrador", t: "Ferretería Alfa", s: "Activo" },
+    { n: "Ramón Aguilar", e: "admin@ferreteriabeta.mx", r: "Administrador", t: "Ferretería Beta", s: "Activo" },
+    { n: "Guadalupe Hernández", e: "ventas@ferreteriaalfa.mx", r: "Administrador", t: "Ferretería Alfa", s: "Activo" },
+    { n: "Iván Salas", e: "ivan@multiverse.mx", r: "Superadministrador", t: "Global", s: "Activo" },
     { n: "Karla Ortiz", e: "karla@soporteti.mx", r: "Administrador", t: "Soporte TI Hidalgo", s: "Invitado" },
-    { n: "Héctor Méndez", e: "hector@ejemplo.mx", r: "Administrador", t: "Papelería Centro", s: "Bloqueado" },
+    { n: "Héctor Méndez", e: "hector@ejemplo.mx", r: "Administrador", t: "Grupo Ferretero Central", s: "Bloqueado" },
   ]);
   const [conf, setConf] = useState<string | null>(null);
   return (<>
@@ -214,7 +214,7 @@ function Reportes() {
     <div className="mt-6 grid gap-6 lg:grid-cols-2">
       <Panel title="Crecimiento de tenants"><div className="h-60"><ResponsiveContainer><AreaChart data={GROWTH}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} /><XAxis dataKey="m" fontSize={12} /><YAxis fontSize={12} width={30} /><Tooltip /><Area dataKey="tenants" stroke="var(--chart-1)" fill="var(--chart-1)" fillOpacity={0.12} /></AreaChart></ResponsiveContainer></div></Panel>
       <Panel title="Ingresos (miles MXN)"><div className="h-60"><ResponsiveContainer><BarChart data={GROWTH}><CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} /><XAxis dataKey="m" fontSize={12} /><YAxis fontSize={12} width={30} /><Tooltip /><Bar dataKey="ingresos" fill="var(--chart-4)" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div></Panel>
-      <Panel title="Tipos de inventario más utilizados" className="lg:col-span-2"><div className="space-y-3">{(Object.keys(INV_TYPES) as InvType[]).map((k, i) => { const v = [16, 21, 12, 15, 10][i] ?? 0; return <div key={k} className="flex items-center gap-3 text-sm"><span className="w-44">{INV_TYPES[k].label}</span><div className="h-2.5 flex-1 rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(v / 21) * 100}%` }} /></div><span className="w-8 text-right font-semibold">{v}</span></div>; })}</div></Panel>
+      <Panel title="Solución ferretera más utilizados" className="lg:col-span-2"><div className="space-y-3">{(Object.keys(INV_TYPES) as InvType[]).map((k, i) => { const v = [16, 21, 12, 15, 10][i] ?? 0; return <div key={k} className="flex items-center gap-3 text-sm"><span className="w-44">{INV_TYPES[k].label}</span><div className="h-2.5 flex-1 rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(v / 21) * 100}%` }} /></div><span className="w-8 text-right font-semibold">{v}</span></div>; })}</div></Panel>
     </div>
   </>);
 }
@@ -228,7 +228,7 @@ function Suscripciones() {
   return (<><PageHeader title="Suscripciones" /><Panel><div className="overflow-x-auto"><table className="w-full min-w-[600px] text-sm"><thead><tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">{["Tenant", "Tipo", "Plan", "Vence", "Estado"].map((h) => <th key={h} className="px-3 py-3">{h}</th>)}</tr></thead><tbody>{tenants.map((t) => <tr key={t.id} className="border-b border-border last:border-0"><td className="px-3 py-3 font-semibold">{t.name}</td><td className="px-3 py-3">{INV_TYPES[t.type].label}</td><td className="px-3 py-3">{t.plan}</td><td className="px-3 py-3">{t.expires}</td><td className="px-3 py-3"><Status s={t.status} /></td></tr>)}</tbody></table></div></Panel></>);
 }
 function Promos() {
-  const [items, setItems] = useState([{ t: "Temporada de regreso a clases", on: true }, { t: "Módulo de caducidades", on: true }, { t: "Migración sin costo", on: true }, { t: "Webinar bibliotecas", on: false }]);
+  const [items, setItems] = useState([{ t: "Control de inventarios multisucursal", on: true }, { t: "Transferencias autorizadas", on: true }, { t: "Migración sin costo", on: true }, { t: "Capacitación de almacenes", on: false }]);
   return (<><PageHeader title="Promociones del sitio público" subtitle="Banners y anuncios visibles en la landing." actions={<Button onClick={() => setItems([...items, { t: "Nueva promoción", on: false }])}><PlusCircle className="mr-2 h-4 w-4" />Nueva</Button>} />
     <div className="grid gap-4 md:grid-cols-2">{items.map((it, i) => <Panel key={i}><div className="flex items-center gap-3"><Megaphone className="h-5 w-5 text-primary" /><Input value={it.t} onChange={(e) => setItems(items.map((x, j) => j === i ? { ...x, t: e.target.value } : x))} /><Switch checked={it.on} onCheckedChange={(v) => setItems(items.map((x, j) => j === i ? { ...x, on: v } : x))} /></div></Panel>)}</div></>);
 }

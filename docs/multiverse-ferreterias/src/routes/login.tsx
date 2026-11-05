@@ -5,16 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Logo } from "@/components/inventra/Shell";
+import { Logo } from "@/components/multiverse/Shell";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/data";
 import { homeFor, useSession } from "@/lib/session";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [
-    { title: "Iniciar sesión — Inventra" },
-    { name: "description", content: "Accede a tu espacio de trabajo en Inventra." },
-    { property: "og:title", content: "Iniciar sesión — Inventra" },
+    { title: "Iniciar sesión — MULTIVERSE" },
+    { name: "description", content: "Accede a tu espacio de trabajo en MULTIVERSE." },
+    { property: "og:title", content: "Iniciar sesión — MULTIVERSE" },
     { property: "og:description", content: "Acceso seguro para administradores y encargados." },
   ] }),
   component: Login,
@@ -38,7 +38,7 @@ function Login() {
       const acc = DEMO_ACCOUNTS.find((a) => a.email === email.trim().toLowerCase());
       if (!acc || pw !== DEMO_PASSWORD) return setError({ kind: "pw", msg: "Correo o contraseña incorrectos. Verifica tus datos." });
       if (acc.role === "suspended") return setError({ kind: "suspended", msg: "Tu cuenta está suspendida. Contacta al administrador de tu negocio." });
-      const s = { email: acc.email, name: acc.label.replace(/^Admin · /, "Admin "), role: acc.role, tenantId: "tenant" in acc ? acc.tenant : undefined, firstLogin: "firstLogin" in acc ? (acc.firstLogin && localStorage.getItem(`inventra-setup-${acc.email}`) !== "done") : undefined };
+      const s = { email: acc.email, name: acc.label.replace(/^Admin · /, "Admin "), role: acc.role, tenantId: "tenant" in acc ? acc.tenant : undefined, firstLogin: "firstLogin" in acc ? (acc.firstLogin && localStorage.getItem(`multiverse-setup-${acc.email}`) !== "done") : undefined };
       signIn(s); toast.success("Bienvenido de nuevo");
       nav({ to: homeFor(s) as "/superadmin" });
     }, 800);

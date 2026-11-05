@@ -7,14 +7,14 @@ use Illuminate\Http\Request;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureActiveUser;
-use App\Http\Middleware\EnsureInventoryType;
-use App\Http\Middleware\EnsureModuleCompatibleWithInventory;
+use App\Http\Middleware\EnsureEstablishmentAccess;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsurePlanLimit;
 use App\Http\Middleware\EnsureSubscriptionActive;
 use App\Http\Middleware\EnsureTenant;
 use App\Http\Middleware\EnsureTenantActive;
 use App\Http\Middleware\EnsureTenantResource;
+use App\Http\Middleware\EnsureWarehouseAccess;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,10 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.active' => EnsureTenantActive::class,
             'subscription.active' => EnsureSubscriptionActive::class,
             'module' => EnsureModuleEnabled::class,
-            'module.compatible' => EnsureModuleCompatibleWithInventory::class,
-            'inventory.type' => EnsureInventoryType::class,
             'tenant.resource' => EnsureTenantResource::class,
             'plan.limit' => EnsurePlanLimit::class,
+            'establishment' => EnsureEstablishmentAccess::class,
+            'warehouse' => EnsureWarehouseAccess::class,
             'role' => CheckRole::class,
             'permission' => CheckPermission::class,
         ]);

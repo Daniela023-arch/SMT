@@ -21,6 +21,7 @@ class Ubicacion extends Model
 
     protected $fillable = [
         'tenant_id',
+        'almacen_id',
         'ubicacion_padre_id',
         'nombre',
         'codigo',
@@ -31,6 +32,11 @@ class Ubicacion extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');
+    }
+
+    public function almacen(): BelongsTo
+    {
+        return $this->belongsTo(Almacen::class);
     }
 
     public function ubicacionPadre(): BelongsTo

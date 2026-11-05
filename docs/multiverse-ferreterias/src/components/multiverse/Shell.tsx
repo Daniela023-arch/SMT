@@ -1,9 +1,26 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, ChevronLeft, ChevronRight, LogOut, Menu, Search, User, type LucideIcon } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, LogOut, Menu, Search, User, Moon, Sun, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession, type Role } from "@/lib/session";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+export function ThemeToggle() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const stored = localStorage.getItem('multiverse-theme');
+    const enabled = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', enabled);
+    setDark(enabled);
+  }, []);
+  const toggle = () => {
+    const next = !dark;
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('multiverse-theme', next ? 'dark' : 'light');
+    setDark(next);
+  };
+  return <button type="button" onClick={toggle} aria-label={dark ? 'Activar modo claro' : 'Activar modo oscuro'} title={dark ? 'Modo claro' : 'Modo oscuro'} className="grid h-10 w-10 place-items-center rounded-full hover:bg-muted">{dark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}</button>;
+}
 
 export function Logo({ className, mark }: { className?: string; mark?: string | undefined }) {
   return (
@@ -15,14 +32,14 @@ export function Logo({ className, mark }: { className?: string; mark?: string | 
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M4 8l8-4 8 4-8 4-8-4z" /><path d="M4 12l8 4 8-4" /><path d="M4 16l8 4 8-4" /></svg>
         </span>
       )}
-      <span className="text-xl">Inventra</span>
+      <span className="text-xl">MULTIVERSE</span>
     </Link>
   );
 }
 
 export type NavItem = { id: string; label: string; icon: LucideIcon };
 
-const ROLE_LABEL: Record<Role, string> = { super: "Superadministrador", admin: "Administrador", ventas: "Encargado de ventas", prestamos: "Encargado de préstamos", almacen: "Encargado de almacén" };
+const ROLE_LABEL: Record<Role, string> = { super: "Superadministrador", admin: "Administrador", ventas: "Encargado de ventas", almacen: "Encargado de almacén" };
 
 /** Airbnb-style horizontal navigation: top bar (logo · main nav · actions) + icon category bar with underline. */
 export function Shell({
@@ -46,22 +63,9 @@ export function Shell({
       <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-4 px-4 md:px-10">
           <Logo mark={logo} />
-          {main && main.length > 1 ? (
-            <nav className="hidden items-center gap-1 lg:flex">
-              {main.map((m) => (
-                <button key={m.id} onClick={() => onMain?.(m.id)}
-                  className={cn("rounded-full px-4 py-2 text-[15px] font-medium transition-colors", mainActive === m.id ? "text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
-                  <span className={cn("pb-1", mainActive === m.id && "border-b-2 border-foreground")}>{m.label}</span>
-                </button>
-              ))}
-            </nav>
-          ) : (
-            <div className="hidden w-[380px] items-center gap-3 rounded-full border border-border bg-surface py-2 pl-5 pr-2 shadow-soft lg:flex">
-              <span className="flex-1 truncate text-sm font-medium">{context ?? "Inventra"}</span>
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground"><Search className="h-4 w-4" /></span>
-            </div>
-          )}
+          <div className="hidden flex-1 lg:block" />
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             {context && main && main.length > 1 && <span className="hidden max-w-[220px] truncate rounded-full px-3 py-2 text-sm font-medium text-muted-foreground xl:block">{context}</span>}
             <button aria-label="Notificaciones" className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-muted">
               <Bell className="h-[18px] w-[18px]" /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />

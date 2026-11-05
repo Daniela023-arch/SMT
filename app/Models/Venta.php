@@ -12,6 +12,8 @@ class Venta extends Model
 
     protected $fillable = [
         'tenant_id',
+        'establecimiento_id',
+        'almacen_id',
         'usuario_id',
         'folio',
         'estado',
@@ -38,6 +40,14 @@ class Venta extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'usuario_id');
+    }
+    public function establecimiento(): BelongsTo
+    {
+        return $this->belongsTo(Establecimiento::class, 'establecimiento_id');
+    }
+    public function almacen(): BelongsTo
+    {
+        return $this->belongsTo(Almacen::class, 'almacen_id');
     }
     public function pagos(): HasMany
     {
