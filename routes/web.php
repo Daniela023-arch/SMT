@@ -2,12 +2,15 @@
 
 use App\Livewire\Establecimientos\Index as EstablecimientosIndex;
 use App\Livewire\Inventario\Show as InventarioShow;
+use App\Livewire\Publico\Inicio as PublicInicio;
+use App\Livewire\Publico\Solicitud as PublicSolicitud;
 use App\Livewire\Productos\Index as ProductosIndex;
 use App\Livewire\Transferencias\Index as TransferenciasIndex;
 use App\Livewire\Ventas\Index as VentasIndex;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+Route::livewire('/', PublicInicio::class)->name('home');
+Route::livewire('/solicitar', PublicSolicitud::class)->name('public.solicitar');
 
 Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
     Route::view('dashboard', 'dashboard')->name('dashboard');
