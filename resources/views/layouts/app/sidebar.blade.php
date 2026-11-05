@@ -15,6 +15,21 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                    @if (auth()->user()->tenant_id !== null)
+                        @if (auth()->user()->roles()->whereIn('roles.slug', ['admin', 'ventas', 'almacen'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
+                            <flux:sidebar.item icon="building-storefront" :href="route('establecimientos.index')" :current="request()->routeIs('establecimientos.*')" wire:navigate>
+                                Establecimientos
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="cube" :href="route('productos.index')" :current="request()->routeIs('productos.*')" wire:navigate>
+                                Catálogo
+                            </flux:sidebar.item>
+                        @endif
+                        @if (auth()->user()->roles()->whereIn('roles.slug', ['admin', 'almacen'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
+                            <flux:sidebar.item icon="arrows-right-left" :href="route('transferencias.index')" :current="request()->routeIs('transferencias.*')" wire:navigate>
+                                Transferencias
+                            </flux:sidebar.item>
+                        @endif
+                    @endif
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
