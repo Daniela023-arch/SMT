@@ -1,228 +1,115 @@
-# 📦 Documentación — Prototipo de Interfaz: Inventra Multi Business Hub
+# MULTIVERSE
 
-> **Fuente:** `docs/multiverse-interfaces.zip` → carpeta `inventra-multi-business-hub`  
-> **Construido con:** [Lovable](https://lovable.dev) · [Editor del proyecto](https://lovable.dev/projects/8dbd4360-51ef-4174-b3b9-fe17a55e3057)
+MULTIVERSE es una plataforma SaaS para la gestión de inventarios de empresas ferreteras con varias sucursales y centros de distribución. Cada empresa funciona como un *tenant* independiente, con un catálogo y precios propios, y existencias separadas por almacén.
 
----
+Este repositorio contiene dos partes relacionadas, pero todavía independientes:
 
-## 🧭 Descripción general
+- **Maqueta de interfaz:** prototipo navegable en React y TanStack Start, ubicado en [`docs/multiverse-ferreterias`](./multiverse-ferreterias/README.md).
+- **Aplicación Laravel:** base backend del proyecto en la raíz del repositorio. Incluye autenticación, modelos, migraciones, servicios y pruebas para las partes implementadas. No hay integración entre la maqueta y Laravel todavía.
 
-**Inventra** es el prototipo frontend de una plataforma SaaS de administración de inventarios multi-tenant. Permite gestionar múltiples empresas o negocios independientes (**tenants**), cada uno con su propio catálogo, usuarios, módulos y personalización visual.
+## Maqueta actual
 
-> ⚠️ **Prototipo frontend únicamente.** La autenticación, permisos y aislamiento multi-tenant son simulados. No hay conexión con Laravel ni MySQL. No usar en producción.
+La interfaz usa una navegación horizontal adaptable a escritorio y móvil. Presenta el sitio público, acceso de demostración y espacios de trabajo que cambian según el rol. La personalización visual se aplica al espacio de cada tenant, mientras que la identidad general de MULTIVERSE se mantiene fija.
 
----
+### Pantallas
 
-## 🏗️ Estructura del proyecto
+| Ruta | Contenido |
+| --- | --- |
+| `/` | Sitio público, funcionalidades, planes y acceso al formulario de solicitud. |
+| `/solicitar` | Formulario de demostración para solicitar el servicio. |
+| `/login` | Acceso simulado con cuentas de demostración. |
+| `/onboarding` | Asistente inicial del tenant: personalización, contraseña, módulos, carga de catálogo y paso de pago simulado. |
+| `/superadmin` | Panel global con tenants, solicitudes, suscripciones, módulos y reportes ficticios. |
+| `/admin` | Espacio empresarial para catálogo, usuarios, sucursales, almacenes, transferencias, compras y reportes. |
+| `/ventas` | Flujo de punto de venta de demostración. |
+| `/almacen` | Inventario, ubicaciones y operaciones de almacén de demostración. |
+| `/prestamos` | Ruta conservada en la maqueta; no forma parte del alcance ferretero definitivo. |
 
+La maqueta utiliza datos locales de demostración. Acciones, roles, suscripciones y permisos no representan operaciones persistidas en el backend.
+
+### Roles definidos
+
+1. **Superadministrador:** administra la plataforma SaaS, los tenants, planes, suscripciones y módulos globales.
+2. **Administrador:** gestiona su empresa, catálogo, usuarios, establecimientos, precios y autorizaciones.
+3. **Encargado de ventas:** trabaja en las sucursales asignadas y registra operaciones comerciales.
+4. **Encargado de almacén:** realiza operaciones de inventario en los establecimientos asignados y solicita transferencias.
+
+Las cuentas y contraseñas de la maqueta son públicas y solo sirven para recorrer la interfaz. No usar credenciales de demostración como cuentas reales.
+
+## Lógica del negocio
+
+La jerarquía física prevista es:
+
+```text
+Tenant
+└── Establecimiento (sucursal o centro de distribución)
+    └── Almacén
+        └── Ubicación (pasillo, rack, estante o nivel)
 ```
-inventra-multi-business-hub/
-├── src/
-│   ├── routes/              # Páginas de la aplicación
-│   │   ├── index.tsx        # Landing pública
-│   │   ├── login.tsx        # Inicio de sesión
-│   │   ├── onboarding.tsx   # Asistente de primer acceso
-│   │   ├── admin.tsx        # Panel del administrador tenant
-│   │   ├── superadmin.tsx   # Dashboard del superadministrador
-│   │   ├── solicitar.tsx    # Formulario de solicitud pública
-│   │   ├── ventas.tsx       # Panel encargado de ventas
-│   │   ├── prestamos.tsx    # Panel encargado de préstamos
-│   │   └── almacen.tsx      # Panel encargado de almacén
-│   ├── components/
-│   │   ├── inventra/
-│   │   │   ├── Shell.tsx    # Contenedor principal + navegación horizontal
-│   │   │   └── Workspace.tsx # Área de trabajo dinámica por módulo
-│   │   └── ui/              # Componentes Radix UI / shadcn
-│   ├── hooks/               # Custom hooks React
-│   ├── lib/                 # Utilidades
-│   ├── styles.css           # Sistema de diseño (tokens CSS + Tailwind)
-│   └── router.tsx           # Configuración TanStack Router
-├── public/
-├── package.json
-├── vite.config.ts
-└── tsconfig.json
-```
 
----
+- El catálogo de productos y los precios son generales dentro de cada tenant.
+- Las existencias pertenecen a un almacén y se pueden detallar por ubicación.
+- El administrador puede consultar la operación consolidada de su tenant.
+- Las ventas descuentan el inventario del almacén elegido y deben confirmarse en una transacción.
+- Las transferencias entre almacenes pasan por solicitud, autorización, despacho y recepción. El destino recibe el stock cuando confirma las cantidades, que pueden ser parciales.
+- Los usuarios operativos deben tener acceso asignado al establecimiento correspondiente.
 
-## 🚀 Instalación y ejecución
+## Ejecutar la maqueta
 
-**Requisitos:** Node.js 20 o superior.
+Requisitos: Node.js compatible con Vite 8 y npm.
 
 ```bash
-# 1. Instalar dependencias
+cd docs/multiverse-ferreterias
 npm install
-
-# 2. Levantar servidor de desarrollo
 npm run dev
-
-# 3. Abrir la URL que muestra la terminal en el navegador
 ```
 
-**Credenciales de demo** (contraseña: `demo1234`):
+Para compilar y revisar las pruebas de la interfaz:
 
-| Rol | Acceso |
-|---|---|
-| Superadministrador | Dashboard global de la plataforma |
-| Administrador tenant | Dashboard del negocio (onboarding en primer acceso) |
-| Encargado de ventas | Punto de venta |
-| Encargado de préstamos | Gestión de préstamos/devoluciones |
-| Encargado de almacén | Control de existencias y movimientos |
+```bash
+npm run build
+npm test
+```
 
----
+La maqueta incluye cuentas ficticias en `src/lib/data.ts`. La contraseña de demostración es `demo1234`; el inicio de sesión se simula localmente.
 
-## 🖥️ Pantallas implementadas
+## Aplicación Laravel
 
-### 1. Sitio web público (`/`)
-Landing page comercial con:
-- Hero: *"Controla tu inventario. Haz crecer tu negocio."*
-- Sección publicitaria con banner, carrusel y tarjetas de funcionalidades
-- **5 tarjetas interactivas** de tipos de inventario con botón "Conocer funcionalidades"
-- Sección de **planes de suscripción** (Mensual / Trimestral / Anual)
-- Navegación: Inicio · Funcionalidades · Tipos de inventario · Planes · Solicitar sistema · Iniciar sesión
+La raíz del repositorio contiene la aplicación Laravel con PHP `^8.3`, Laravel `^13`, Livewire y Flux. Para preparar una instalación local:
 
-### 2. Inicio de sesión (`/login`)
-- Correo + contraseña (mostrar/ocultar)
-- Recordarme · Recuperar contraseña
-- Redirección automática por rol al panel correspondiente
-- Estados de error: cuenta suspendida, contraseña incorrecta, cargando
+```bash
+composer install
+Copy-Item .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve
+```
 
-### 3. Superadministrador (`/superadmin`)
-Dashboard global con navegación: **Dashboard · Nuevo tenant · Inventarios · Usuarios · Módulos · Reportes**
+Configura primero la conexión de base de datos en `.env`. El archivo de ejemplo usa SQLite. Esta aplicación es la base backend del proyecto; varias áreas descritas por la maqueta, como compras, devoluciones, conteos y suscripciones operativas, aún requieren integración e implementación.
 
-| Sección | Contenido |
-|---|---|
-| Dashboard | KPIs: tenants activos, solicitudes, suscripciones, ingresos; gráficas de crecimiento |
-| Nuevo tenant | Tabla de solicitudes (Pendiente / En revisión / Aprobada / Rechazada) + asistente de creación |
-| Inventarios | Vista de los 5 tipos, estadísticas y configuración general |
-| Usuarios | Gestión global de cuentas, roles, bloqueos e invitaciones |
-| Módulos | Catálogo global de módulos con compatibilidad por tipo de inventario |
-| Reportes | Crecimiento, ingresos, renovaciones y actividad; filtros por fecha/estado/tipo |
+Las pruebas del backend se ejecutan con:
 
-### 4. Asistente de primer acceso (`/onboarding`)
-Barra de progreso de **5 pasos** que el administrador completa la primera vez:
+```bash
+php artisan test
+```
 
-1. **Bienvenida** — Nombre del negocio y tipo de inventario (bloqueados)
-2. **Personalización** — Logo, color principal/secundario, vista previa en tiempo real
-3. **Seguridad** — Cambio obligatorio de contraseña temporal con medidor de fortaleza
-4. **Módulos** — Activar/desactivar módulos dentro de los autorizados por el superadmin
-5. **Carga inicial** — Importación CSV, registro manual o configurar más tarde
+## Estado y límites
 
-### 5. Administrador del tenant (`/admin`)
-Navegación: **Mi tenant · Usuarios · Catálogo · Reportes**
+- La maqueta está pensada para presentar y explorar la experiencia de MULTIVERSE; conserva datos y estados en el navegador y usa contenido ficticio.
+- La interfaz no autentica usuarios de forma segura, no procesa pagos reales y no debe usarse para controlar inventario de producción.
+- Laravel y la maqueta todavía no comparten API ni almacenamiento.
+- El backend ya tiene una base multi-tenant y servicios para algunas operaciones. La implementación no cubre aún todas las tablas, reglas y flujos del diseño integral.
+- Antes de producción se deben completar la integración, autorización del lado servidor, persistencia, validaciones, auditoría y pruebas de los procesos pendientes.
 
-- **Mi tenant:** dashboard con existencias, movimientos recientes, estado de suscripción y alertas
-- **Usuarios:** crear, editar, activar/desactivar, asignar roles y permisos
-- **Catálogo:** tablas con CRUD, búsqueda, filtros, paginación y ordenamiento
-- **Reportes:** existencias, entradas/salidas, bajo stock, ventas, caducidades; exportación CSV/PDF
+## Estructura relevante
 
-### 6. Encargado de ventas (`/ventas`)
-- Punto de venta: buscador, lector de código de barras, carrito, totales, método de pago
-- Validación de existencias antes de confirmar
-- Estados: venta exitosa, error, stock insuficiente
+```text
+app/                    Aplicación Laravel: modelos, servicios y middleware
+database/migrations/    Esquema de base de datos
+routes/                 Rutas Laravel
+tests/                  Pruebas Pest
+docs/README.md           Guía general de MULTIVERSE
+docs/multiverse-ferreterias/  Maqueta React/TanStack Start
+```
 
-### 7. Encargado de préstamos (`/prestamos`)
-- Navegación: Inicio · Préstamos · Devoluciones · Historial
-- Buscador de ejemplares, disponibilidad, datos del solicitante, fechas y estado
-- Listado de préstamos activos y vencidos; no permite prestar ítems no disponibles
-
-### 8. Encargado de almacén (`/almacen`)
-- Navegación: Inicio · Inventario · Entradas · Salidas · Movimientos
-- Stock actual vs. mínimo, alertas, ubicaciones, historial de movimientos
-- Validaciones contra existencias negativas y registros duplicados
-
----
-
-## 📦 Tipos de inventario soportados
-
-| Tipo | Módulos principales |
-|---|---|
-| 📚 Biblioteca | Libros, autores, ejemplares, préstamos, devoluciones |
-| 🛒 Abarrotes | Productos, categorías, existencias, ventas, lotes/caducidades |
-| ✏️ Papelería | Artículos escolares, productos, existencias, ventas, proveedores |
-| 💊 Farmacia | Medicamentos, lotes, caducidades, ventas, alertas de vencimiento |
-| 💻 Equipos electrónicos | Equipos, nros. de serie, ubicaciones, asignaciones, mantenimientos, bajas |
-
----
-
-## 🧩 Módulos disponibles
-
-Los módulos son configurados por el superadministrador por tenant y el administrador puede activar/desactivar los opcionales:
-
-- Inventario y stock · Productos · Categorías · Ubicaciones · Proveedores
-- Lotes · Caducidades · Ventas · Préstamos · Devoluciones
-- Datos bibliográficos · Mantenimientos · Bajas · Importaciones CSV · Reportes
-
----
-
-## 🎨 Sistema de diseño
-
-### Identidad visual
-- **Tipografía:** `Plus Jakarta Sans` (fallback: `ui-sans-serif`, `system-ui`)
-- **Paleta base:** Azul profundo como identidad principal
-- **Superficies:** Blanco y gris muy claro
-- **Estados semánticos:** Verde (éxito) · Ámbar (advertencia) · Rojo (error)
-
-### Tokens de color (modo claro)
-
-| Token | Valor OKLCH | Uso |
-|---|---|---|
-| `--primary` | `oklch(0.36 0.13 262)` | Botones, activos, gráficas |
-| `--background` | `oklch(0.985 0.003 255)` | Fondo general |
-| `--foreground` | `oklch(0.2 0.03 262)` | Texto principal |
-| `--success` | `oklch(0.6 0.15 155)` | Confirmaciones |
-| `--warning` | `oklch(0.78 0.15 75)` | Alertas |
-| `--destructive` | `oklch(0.58 0.22 25)` | Errores y eliminaciones |
-
-### Principios de UI
-- Navegación **horizontal estilo Airbnb** (no sidebar); categoría activa con línea inferior
-- Tarjetas con bordes sutiles, esquinas redondeadas (`--radius: 0.875rem`)
-- Sombras discretas: `shadow-soft` / `shadow-lift`
-- Animaciones suaves: `animate-fade-up` (0.45 s cubic-bezier)
-- Modales para acciones importantes; toasts para notificaciones
-- Confirmación explícita para operaciones destructivas
-- Responsive: escritorio, tablet y móvil (navegación con scroll horizontal en móvil)
-- Soporte de modo oscuro (`.dark`) con tokens invertidos
-
-### Personalización por tenant
-Cada tenant puede definir su propio color principal/secundario desde el onboarding. Los colores del tenant reemplazan los de marca dentro de su espacio.
-
----
-
-## 🛠️ Stack tecnológico
-
-| Categoría | Tecnología |
-|---|---|
-| Framework UI | React 19 + TypeScript 5 |
-| Routing | TanStack Router 1.170 |
-| Data fetching | TanStack Query 5 |
-| Build tool | Vite 8 + Bun |
-| Estilos | Tailwind CSS 4 + `tw-animate-css` |
-| Componentes | Radix UI (suite completa) + shadcn/ui |
-| Formularios | React Hook Form + Zod |
-| Gráficas | Recharts |
-| Iconos | Lucide React |
-| Fechas | date-fns |
-| Toasts | Sonner |
-| Tests | Vitest + Testing Library |
-| Linting/Format | ESLint 9 + Prettier |
-| Generado con | [Lovable](https://lovable.dev) |
-
----
-
-## ⚠️ Alcance y limitaciones del prototipo
-
-- **Sin backend:** toda la información se persiste en `localStorage` del navegador
-- **Sin autenticación real:** roles y permisos son simulados
-- **Sin integración Laravel/MySQL:** el proyecto SMT (Laravel) es independiente
-- **Importación CSV básica:** sin importador robusto ni transacciones de base de datos
-- **Subida de logo limitada:** solo imágenes pequeñas (límite de `localStorage`)
-- **Multi-tenancy simulada:** no hay aislamiento real de datos entre tenants
-
----
-
-## 🔗 Referencias
-
-- [Editor Lovable del proyecto](https://lovable.dev/projects/8dbd4360-51ef-4174-b3b9-fe17a55e3057)
-- [Instalación de NVM](https://github.com/nvm-sh/nvm#installing-and-updating)
-- Archivo fuente: `docs/multiverse-interfaces.zip`
+Consulta [`docs/multiverse-ferreterias/CAMBIOS_MULTIVERSE.md`](./multiverse-ferreterias/CAMBIOS_MULTIVERSE.md) para las notas de adaptación de la interfaz y sus limitaciones actuales.
