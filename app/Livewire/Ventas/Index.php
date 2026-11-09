@@ -4,6 +4,7 @@ namespace App\Livewire\Ventas;
 
 use App\Models\Almacen;
 use App\Models\DetalleVenta;
+use App\Models\Existencia;
 use App\Models\Producto;
 use App\Models\UnidadInventario;
 use App\Models\Venta;
@@ -178,8 +179,14 @@ class Index extends Component
         $ventas = Venta::query()->where('tenant_id', $tenantId)
             ->where('establecimiento_id', $this->establecimiento)->where('almacen_id', $this->almacen)
             ->with(['detallesVenta.producto', 'pagos', 'usuario:id,name'])->latest('id')->paginate(20);
-        $productos = Producto::query()->where('tenant_id', $tenantId)->where('activo', true)->orderBy('nombre')->get(['id', 'sku', 'nombre', 'precio_venta', 'requiere_serie']);
+        $productos = Producto::query()->where('tenant_id', $tenantId)->where('activo', true)->orderBy('nombre')->get(['id', 'sku', 'nombre', 'unidad_medida', 'precio_venta', 'requiere_serie']);
+        $existenciasPorProducto = Existencia::query()
+            ->where('tenant_id', $tenantId)
+            ->where('almacen_id', $this->almacen)
+            ->selectRaw('producto_id, SUM(cantidad) as cantidad_disponible')
+            ->groupBy('producto_id')
+            ->pluck('cantidad_disponible', 'producto_id');
 
-        return view('livewire.ventas.index', compact('ventas', 'productos'))->layout('layouts.app');
+        return view('livewire.ventas.index', compact('ventas', 'productos', 'existenciasPorProducto'))->layout('layouts.app');
     }
 }
