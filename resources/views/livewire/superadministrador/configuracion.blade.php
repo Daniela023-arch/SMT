@@ -1,0 +1,10 @@
+<div class="mx-auto max-w-4xl space-y-6">
+    <header><p class="text-sm font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Preferencias globales</p><h1 class="mt-1 text-3xl font-extrabold">Configuración de MULTIVERSE</h1><p class="mt-2 text-sm text-slate-500 dark:text-zinc-400">Estos valores aplican a toda la plataforma, no a la identidad de cada tenant.</p></header>
+    <form wire:submit="guardar" class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+        <label class="grid gap-1.5 text-sm font-semibold">Nombre comercial<input wire:model="nombreComercial" class="rounded-xl border-slate-300 dark:border-zinc-700 dark:bg-zinc-950">@error('nombreComercial')<span class="text-xs text-red-600">{{ $message }}</span>@enderror</label>
+        <label class="grid gap-1.5 text-sm font-semibold">Correo de soporte<input type="email" wire:model="correoSoporte" class="rounded-xl border-slate-300 dark:border-zinc-700 dark:bg-zinc-950">@error('correoSoporte')<span class="text-xs text-red-600">{{ $message }}</span>@enderror</label>
+        <label class="grid gap-1.5 text-sm font-semibold">Zona horaria<select wire:model="zonaHoraria" class="rounded-xl border-slate-300 dark:border-zinc-700 dark:bg-zinc-950"><option value="America/Mexico_City">Ciudad de México</option><option value="America/Tijuana">Tijuana</option><option value="America/Cancun">Cancún</option><option value="America/Monterrey">Monterrey</option><option value="UTC">UTC</option></select>@error('zonaHoraria')<span class="text-xs text-red-600">{{ $message }}</span>@enderror</label>
+        <div class="rounded-xl bg-indigo-50 p-4 text-sm leading-6 text-indigo-950 dark:bg-indigo-950/30 dark:text-indigo-100">El nombre comercial y la zona horaria se aplican a las siguientes solicitudes. El correo global se usará como remitente cuando el servicio de correo saliente esté configurado.</div>
+        <button class="rounded-xl bg-indigo-700 px-6 py-3 text-sm font-bold text-white hover:bg-indigo-800">Guardar configuración</button>
+    </form>
+</div>

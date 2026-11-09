@@ -15,6 +15,11 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                    @if (auth()->user()->roles()->where('roles.slug', 'superadmin')->whereNull('roles.tenant_id')->wherePivot('tenant_id', null)->exists())
+                        <flux:sidebar.item icon="squares-2x2" :href="route('superadmin.dashboard')" :current="request()->routeIs('superadmin.*')" wire:navigate>
+                            Superadministrador
+                        </flux:sidebar.item>
+                    @endif
                     @if (auth()->user()->tenant_id !== null)
                         @if (auth()->user()->roles()->whereIn('roles.slug', ['admin', 'ventas', 'almacen'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
                             <flux:sidebar.item icon="building-storefront" :href="route('establecimientos.index')" :current="request()->routeIs('establecimientos.*')" wire:navigate>

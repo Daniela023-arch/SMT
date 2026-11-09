@@ -23,8 +23,7 @@
                 <a class="rounded-full px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100" href="{{ route('public.solicitar') }}" wire:navigate>Solicitar sistema</a>
             </nav>
             <div class="flex items-center gap-2">
-                @guest <a class="hidden rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 sm:inline-flex" href="{{ route('login') }}" wire:navigate>Iniciar sesión</a>
-                @else <a class="rounded-full bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800" href="{{ route('dashboard') }}" wire:navigate>Ir al panel</a> @endguest
+                <a class="inline-flex rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="{{ route('login') }}" wire:navigate>Iniciar sesión</a>
                 <a class="rounded-full bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 lg:hidden" href="{{ route('public.solicitar') }}" wire:navigate>Solicitar</a>
             </div>
         </div>

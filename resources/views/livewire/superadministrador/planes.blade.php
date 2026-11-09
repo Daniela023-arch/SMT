@@ -1,0 +1,24 @@
+<div class="space-y-6">
+    <header><p class="text-sm font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Oferta comercial</p><h1 class="mt-1 text-3xl font-extrabold">Planes de suscripción</h1><p class="mt-2 text-sm text-slate-500 dark:text-zinc-400">Configura periodicidad, precio y límites incluidos. Los cambios no eliminan contratos existentes.</p></header>
+    <div class="grid gap-6 xl:grid-cols-[.8fr_1.2fr]">
+        <form wire:submit="guardar" class="h-fit space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+            <h2 class="text-lg font-bold">{{ $planEditando ? 'Editar plan' : 'Crear plan' }}</h2>
+            <label class="grid gap-1.5 text-sm font-semibold">Nombre<input wire:model="nombre" class="rounded-xl border-slate-300 text-sm dark:border-zinc-700 dark:bg-zinc-950" placeholder="Plan mensual">@error('nombre')<span class="text-xs text-red-600">{{ $message }}</span>@enderror</label>
+            <div class="grid gap-4 sm:grid-cols-2"><label class="grid gap-1.5 text-sm font-semibold">Precio (MXN)<input wire:model="precio" type="number" min="0" step="0.01" class="rounded-xl border-slate-300 text-sm dark:border-zinc-700 dark:bg-zinc-950">@error('precio')<span class="text-xs text-red-600">{{ $message }}</span>@enderror</label><label class="grid gap-1.5 text-sm font-semibold">Periodicidad<select wire:model="periodicidad" class="rounded-xl border-slate-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></label></div>
+            <div class="grid gap-4 sm:grid-cols-2"><label class="grid gap-1.5 text-sm font-semibold">Límite de usuarios<input wire:model="limiteUsuarios" type="number" min="1" class="rounded-xl border-slate-300 text-sm dark:border-zinc-700 dark:bg-zinc-950" placeholder="Sin límite"></label><label class="grid gap-1.5 text-sm font-semibold">Límite de productos<input wire:model="limiteProductos" type="number" min="1" class="rounded-xl border-slate-300 text-sm dark:border-zinc-700 dark:bg-zinc-950" placeholder="Sin límite"></label></div>
+            @error('limiteUsuarios')<p class="text-xs text-red-600">{{ $message }}</p>@enderror @error('limiteProductos')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            <div class="flex gap-2"><button class="flex-1 rounded-xl bg-indigo-700 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-800">{{ $planEditando ? 'Guardar cambios' : 'Crear plan' }}</button>@if($planEditando)<button type="button" wire:click="cancelarEdicion" class="rounded-xl border border-slate-300 px-4 text-sm font-semibold dark:border-zinc-700">Cancelar</button>@endif</div>
+        </form>
+
+        <section class="grid gap-4 md:grid-cols-2">
+            @forelse($planes as $plan)
+                <article class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <div class="flex items-start justify-between gap-3"><div><h2 class="font-bold">{{ $plan->nombre }}</h2><p class="mt-1 text-xs text-slate-500">{{ ucfirst($plan->periodicidad) }} · {{ $plan->suscripciones_count }} suscripciones</p></div><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $plan->activo ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300' }}">{{ $plan->activo ? 'Activo' : 'Inactivo' }}</span></div>
+                    <p class="mt-5 text-3xl font-extrabold">${{ number_format((float) $plan->precio, 2) }} <span class="text-xs font-medium text-slate-500">MXN / {{ $plan->periodicidad }}</span></p>
+                    <p class="mt-3 flex-1 text-sm text-slate-600 dark:text-zinc-300">{{ $plan->limite_usuarios ? $plan->limite_usuarios.' usuarios' : 'Usuarios sin límite' }} · {{ $plan->limite_productos ? number_format($plan->limite_productos).' productos' : 'Productos sin límite' }}</p>
+                    <div class="mt-5 flex gap-2"><button wire:click="editar({{ $plan->id }})" class="flex-1 rounded-xl border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-800 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300">Editar</button><button wire:click="cambiarActivo({{ $plan->id }})" wire:confirm="¿Cambiar la disponibilidad de este plan?" class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold dark:border-zinc-700">{{ $plan->activo ? 'Desactivar' : 'Activar' }}</button></div>
+                </article>
+            @empty<p class="rounded-2xl border border-dashed border-slate-300 p-8 text-sm text-slate-500 md:col-span-2 dark:border-zinc-700">Aún no hay planes. Crea el primero para poder aprobar solicitudes.</p>@endforelse
+        </section>
+    </div>
+</div>

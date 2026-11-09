@@ -96,10 +96,10 @@
                             Solicitar sistema
                         </a>
                     @else
-                        <a href="{{ route('dashboard') }}"
+                        <a href="{{ route('login') }}"
                            wire:navigate
-                           class="inventra-btn inventra-btn--primary">
-                            Ir al panel
+                           class="inventra-btn inventra-btn--ghost hidden sm:inline-flex">
+                            Iniciar sesión
                         </a>
                     @endguest
 

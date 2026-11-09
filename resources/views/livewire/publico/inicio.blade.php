@@ -17,6 +17,19 @@
         </div>
     </section>
 
+    @if($promociones->isNotEmpty())
+        <section aria-label="Promociones vigentes" class="mx-auto grid max-w-7xl gap-4 px-4 pt-10 md:grid-cols-2 md:px-8">
+            @foreach($promociones as $promocion)
+                <article class="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 sm:p-6">
+                    @if($promocion->etiqueta)<span class="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-800">{{ $promocion->etiqueta }}</span>@endif
+                    <h2 class="mt-3 text-lg font-bold">{{ $promocion->titulo }}</h2>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">{{ $promocion->descripcion }}</p>
+                    @if($promocion->texto_boton && $promocion->url_boton)<a href="{{ $promocion->url_boton }}" class="mt-4 inline-flex font-semibold text-indigo-700 underline underline-offset-4">{{ $promocion->texto_boton }} →</a>@endif
+                </article>
+            @endforeach
+        </section>
+    @endif
+
     <section id="funcionalidades" class="mx-auto max-w-7xl px-4 py-20 md:px-8">
         <div class="max-w-2xl"><span class="text-sm font-bold uppercase tracking-wider text-indigo-700">Operación conectada</span><h2 class="mt-3 text-3xl font-extrabold tracking-tight md:text-4xl">Todo tu inventario, con contexto de cada sucursal</h2><p class="mt-4 leading-7 text-slate-600">Consulta el catálogo compartido y conserva el control de existencias, movimientos y permisos en cada ubicación.</p></div>
         <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -29,9 +42,11 @@
     <section id="ferreteria" class="border-y border-slate-200 bg-slate-50 py-20"><div class="mx-auto grid max-w-7xl items-center gap-10 px-4 md:px-8 lg:grid-cols-2"><div><span class="text-sm font-bold uppercase tracking-wider text-indigo-700">Diseñado para ferreterías</span><h2 class="mt-3 text-3xl font-extrabold tracking-tight md:text-4xl">Del tornillo más pequeño a la operación completa</h2><p class="mt-4 leading-7 text-slate-600">Organiza un catálogo ferretero amplio, administra unidades y existencias, y conserva visibilidad de lo que ocurre en cada punto de venta y almacén.</p><a href="{{ route('public.solicitar') }}" wire:navigate class="mt-7 inline-flex rounded-full bg-indigo-700 px-6 py-3 font-semibold text-white hover:bg-indigo-800">Cuéntanos de tu operación →</a></div><div class="grid grid-cols-2 gap-3">@foreach ([['01','Catálogo central','Productos consistentes en todo el negocio'],['02','Stock por ubicación','Existencia visible en cada almacén'],['03','Movimiento controlado','Ventas, ajustes y transferencias'],['04','Acceso por función','Equipo con permisos definidos']] as [$num,$title,$body])<div class="rounded-2xl border border-slate-200 bg-white p-5"><span class="text-xs font-extrabold text-indigo-700">{{ $num }}</span><h3 class="mt-4 font-bold">{{ $title }}</h3><p class="mt-2 text-sm leading-5 text-slate-600">{{ $body }}</p></div>@endforeach</div></div></section>
 
     <section id="planes" class="mx-auto max-w-7xl px-4 py-20 md:px-8"><div class="mx-auto max-w-2xl text-center"><span class="text-sm font-bold uppercase tracking-wider text-indigo-700">Planes de suscripción</span><h2 class="mt-3 text-3xl font-extrabold tracking-tight md:text-4xl">Una modalidad para cada etapa del negocio</h2><p class="mt-4 text-slate-600">El precio y el alcance se confirman según la configuración y las necesidades de tu operación.</p></div><div class="mt-10 grid gap-5 md:grid-cols-3">
-        @foreach ([['Mensual','mes','Flexibilidad para iniciar y ajustar tu operación.'],['Trimestral','trimestre','Planeación por periodos para tu equipo.'],['Anual','año','Continuidad para una operación consolidada.']] as [$plan,$periodo,$desc])
-            <article class="flex flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm"><h3 class="text-xl font-bold">Plan {{ $plan }}</h3><p class="mt-4 text-3xl font-extrabold">Cotización <span class="text-sm font-medium text-slate-500">/ {{ $periodo }}</span></p><p class="mt-3 flex-1 text-sm leading-6 text-slate-600">{{ $desc }} La configuración final se revisa contigo antes de activar el servicio.</p><ul class="mt-6 space-y-2 text-sm text-slate-700"><li>✓ Inventario por almacén</li><li>✓ Sucursales y transferencias</li><li>✓ Roles para el equipo</li></ul><a href="{{ route('public.solicitar', ['plan' => $plan]) }}" wire:navigate class="mt-7 rounded-full border border-indigo-200 px-5 py-3 text-center font-semibold text-indigo-800 hover:bg-indigo-50">Solicitar plan</a></article>
-        @endforeach
+        @forelse ($planes as $plan)
+            <article class="flex flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm"><h3 class="text-xl font-bold">{{ $plan->nombre }}</h3><p class="mt-4 text-3xl font-extrabold">${{ number_format((float) $plan->precio, 2) }} <span class="text-sm font-medium text-slate-500">MXN / {{ $plan->periodicidad === 'mensual' ? 'mes' : ($plan->periodicidad === 'trimestral' ? 'trimestre' : 'año') }}</span></p><p class="mt-3 flex-1 text-sm leading-6 text-slate-600">Plan de suscripción para la operación de tu ferretería. Revisaremos contigo las sucursales, módulos y configuración antes de activar el servicio.</p><ul class="mt-6 space-y-2 text-sm text-slate-700"><li>✓ Inventario por almacén</li><li>✓ Sucursales y transferencias</li><li>✓ Roles para el equipo</li><li>✓ Hasta {{ $plan->limite_usuarios ? $plan->limite_usuarios.' usuarios' : 'usuarios sin límite' }}</li><li>✓ Hasta {{ $plan->limite_productos ? number_format($plan->limite_productos).' productos' : 'productos sin límite' }}</li></ul><a href="{{ route('public.solicitar', ['plan' => ucfirst($plan->periodicidad)]) }}" wire:navigate class="mt-7 rounded-full border border-indigo-200 px-5 py-3 text-center font-semibold text-indigo-800 hover:bg-indigo-50">Solicitar plan</a></article>
+        @empty
+            <p class="mt-10 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-600 md:col-span-3">Los planes están en actualización. <a href="{{ route('public.solicitar') }}" class="font-semibold text-indigo-700 underline">Solicita información</a>.</p>
+        @endforelse
     </div><p class="mt-5 text-center text-xs text-slate-500">El envío de una solicitud no genera un cargo ni activa automáticamente una cuenta.</p></section>
 
     <section class="bg-indigo-800 px-4 py-14 text-white"><div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 md:flex-row md:items-center md:px-8"><div><h2 class="text-2xl font-extrabold">¿Listo para ordenar tu operación?</h2><p class="mt-2 text-indigo-100">Platícanos cuántas sucursales y almacenes necesitas administrar.</p></div><a href="{{ route('public.solicitar') }}" wire:navigate class="rounded-full bg-white px-6 py-3 font-bold text-indigo-800 hover:bg-indigo-50">Solicitar información →</a></div></section>
