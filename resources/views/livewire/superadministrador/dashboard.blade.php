@@ -4,8 +4,8 @@
             <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Dashboard global</h1>
             <p class="mt-1 text-sm text-slate-500">Resumen de tenants, solicitudes y suscripciones de MULTIVERSE.</p>
         </div>
-        <a href="{{ route('superadmin.solicitudes') }}" wire:navigate class="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-xl bg-blue-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 md:self-auto">
-            <span class="text-lg leading-none">＋</span> Revisar solicitudes
+        <a href="{{ route('superadmin.solicitudes') }}" wire:navigate class="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl border border-blue-700 bg-blue-700 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-900/20 transition hover:border-blue-800 hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:self-auto">
+            <svg viewBox="0 0 24 24" class="size-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 5h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8m0 0H3m2 0V5m0 3 3-3M9 12h7m-7 4h7"/></svg> Revisar solicitudes
             @if($solicitudesPendientes > 0)<span class="rounded-full bg-white/20 px-2 py-0.5 text-xs">{{ $solicitudesPendientes }}</span>@endif
         </a>
     </header>

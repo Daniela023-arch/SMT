@@ -48,11 +48,11 @@ return new class extends Migration
         });
 
         Schema::table('ubicaciones', function (Blueprint $table): void {
-            $table->foreignId('almacen_id')->nullable()->after('tenant_id')->constrained('almacenes')->nullOnDelete();
+            $table->foreignId('almacen_id')->nullable()->constrained('almacenes')->nullOnDelete();
         });
 
         Schema::table('existencias', function (Blueprint $table): void {
-            $table->foreignId('almacen_id')->nullable()->after('tenant_id')->constrained('almacenes')->nullOnDelete();
+            $table->foreignId('almacen_id')->nullable()->constrained('almacenes')->nullOnDelete();
             $table->index(['tenant_id', 'almacen_id', 'producto_id'], 'existencias_por_almacen');
         });
 

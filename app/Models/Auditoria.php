@@ -29,6 +29,7 @@ class Auditoria extends Model
         return [
             'datos_anteriores' => 'array',
             'datos_nuevos' => 'array',
+            'created_at' => 'datetime',
         ];
     }
 
