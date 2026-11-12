@@ -56,6 +56,7 @@
                 ['superadmin.usuarios', 'Usuarios', 'users'],
                 ['superadmin.modulos', 'Módulos', 'puzzle-piece'],
                 ['superadmin.reportes', 'Reportes', 'chart-bar'],
+                ['superadmin.actividad', 'Supervisión', 'arrows-right-left'],
             ],
             'Comercial' => [
                 ['superadmin.planes', 'Planes', 'credit-card'],

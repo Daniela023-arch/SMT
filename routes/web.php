@@ -15,6 +15,7 @@ use App\Livewire\Superadministrador\Suscripciones as SuperadminSuscripciones;
 use App\Livewire\Superadministrador\Tenants as SuperadminTenants;
 use App\Livewire\Superadministrador\Usuarios as SuperadminUsuarios;
 use App\Livewire\Superadministrador\Configuracion as SuperadminConfiguracion;
+use App\Livewire\Superadministrador\Actividad as SuperadminActividad;
 use App\Livewire\Transferencias\Index as TransferenciasIndex;
 use App\Livewire\Ventas\Index as VentasIndex;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
         Route::livewire('/usuarios', SuperadminUsuarios::class)->name('superadmin.usuarios');
         Route::livewire('/promociones', SuperadminPromociones::class)->name('superadmin.promociones');
         Route::livewire('/reportes', SuperadminReportes::class)->name('superadmin.reportes');
+        Route::livewire('/actividad', SuperadminActividad::class)->name('superadmin.actividad');
         Route::livewire('/configuracion', SuperadminConfiguracion::class)->name('superadmin.configuracion');
     });
 
