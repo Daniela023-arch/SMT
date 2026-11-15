@@ -18,22 +18,23 @@ use App\Livewire\Superadministrador\Configuracion as SuperadminConfiguracion;
 use App\Livewire\Superadministrador\Actividad as SuperadminActividad;
 use App\Livewire\Transferencias\Index as TransferenciasIndex;
 use App\Livewire\Ventas\Index as VentasIndex;
+use App\Http\Controllers\TenantDashboardController;
+use App\Http\Controllers\MercadoPagoWebhookController;
+use App\Http\Controllers\MercadoPagoSimulacionController;
+use App\Livewire\Tenant\Onboarding;
+use App\Livewire\Tenant\Usuarios as TenantUsuarios;
 use Illuminate\Support\Facades\Route;
 
 Route::livewire('/', PublicInicio::class)->name('home');
 Route::livewire('/solicitar', PublicSolicitud::class)->name('public.solicitar');
+Route::post('/webhooks/mercadopago', MercadoPagoWebhookController::class)
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class])
+    ->name('mercadopago.webhook');
 
-Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
-    Route::get('dashboard', function () {
-        $user = request()->user();
-        $isSuperadmin = $user->roles()
-            ->where('roles.slug', 'superadmin')
-            ->whereNull('roles.tenant_id')
-            ->wherePivot('tenant_id', null)
-            ->exists();
-
-        return $isSuperadmin ? redirect()->route('superadmin.dashboard') : view('dashboard');
-    })->name('dashboard');
+Route::middleware(['auth', 'active', 'verified', 'tenant.onboarding'])->group(function (): void {
+    Route::livewire('/configuracion-inicial', Onboarding::class)->name('onboarding.show');
+    Route::get('/configuracion-inicial/checkout-preview', MercadoPagoSimulacionController::class)->name('onboarding.simulacion');
+    Route::get('dashboard', TenantDashboardController::class)->name('dashboard');
 
     Route::prefix('superadmin')->middleware('role:superadmin')->group(function (): void {
         Route::livewire('/', SuperadminDashboard::class)->name('superadmin.dashboard');
@@ -50,24 +51,28 @@ Route::middleware(['auth', 'active', 'verified'])->group(function (): void {
     });
 
     Route::middleware(['tenant', 'tenant.active', 'subscription.active'])->group(function (): void {
+        Route::livewire('personal', TenantUsuarios::class)
+            ->middleware('role:admin,gerente')
+            ->name('tenant.usuarios');
+
         Route::livewire('establecimientos', EstablecimientosIndex::class)
-            ->middleware(['role:admin,ventas,almacen', 'module:sucursales'])
+            ->middleware(['role:admin,gerente,ventas,almacen', 'module:sucursales'])
             ->name('establecimientos.index');
 
         Route::livewire('productos', ProductosIndex::class)
-            ->middleware(['role:admin,ventas,almacen', 'module:productos'])
+            ->middleware(['role:admin,gerente,almacen', 'module:productos'])
             ->name('productos.index');
 
         Route::livewire('establecimientos/{establecimiento}/almacenes/{almacen}/inventario', InventarioShow::class)
-            ->middleware(['role:admin,almacen,ventas', 'establishment:establecimiento', 'warehouse:almacen', 'module:stock'])
+            ->middleware(['role:admin,gerente,almacen', 'establishment:establecimiento', 'warehouse:almacen', 'module:stock'])
             ->name('inventario.show');
 
         Route::livewire('establecimientos/{establecimiento}/almacenes/{almacen}/ventas', VentasIndex::class)
-            ->middleware(['role:admin,ventas', 'establishment:establecimiento', 'warehouse:almacen', 'module:ventas'])
+            ->middleware(['role:admin,gerente,ventas', 'establishment:establecimiento', 'warehouse:almacen', 'module:ventas'])
             ->name('ventas.index');
 
         Route::livewire('transferencias', TransferenciasIndex::class)
-            ->middleware(['role:admin,almacen', 'module:transferencias'])
+            ->middleware(['role:admin,gerente,almacen', 'module:transferencias'])
             ->name('transferencias.index');
     });
 });

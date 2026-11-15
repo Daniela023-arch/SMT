@@ -70,14 +70,14 @@ class Index extends Component
 
     public function autorizar(int $id, TransferenciaService $service): void
     {
-        $this->autorizarAdmin();
+        $this->autorizarAdminOGerente();
         $service->autorizar($this->transferenciaDelTenant($id)->getKey(), (int) auth()->id());
         Flux::toast(variant: 'success', text: 'Transferencia autorizada.');
     }
 
     public function rechazar(int $id, TransferenciaService $service): void
     {
-        $this->autorizarAdmin();
+        $this->autorizarAdminOGerente();
         $datos = $this->validate(['motivoRechazo' => ['required', 'string', 'max:1000']]);
         $service->rechazar($this->transferenciaDelTenant($id)->getKey(), (int) auth()->id(), $datos['motivoRechazo']);
         $this->reset('motivoRechazo');
@@ -86,14 +86,14 @@ class Index extends Component
 
     public function despachar(int $id, TransferenciaService $service): void
     {
-        $this->autorizarAlmacen();
+        $this->autorizarOperaciones();
         $service->despachar($this->transferenciaDelTenant($id)->getKey(), (int) auth()->id());
         Flux::toast(variant: 'success', text: 'Salida registrada; transferencia en tránsito.');
     }
 
     public function recibir(int $id, TransferenciaService $service): void
     {
-        $this->autorizarAlmacen();
+        $this->autorizarOperaciones();
         $datos = $this->validate(['recepciones' => ['required', 'array', 'min:1'], 'recepciones.*' => ['nullable', 'numeric', 'gte:0', 'decimal:0,4']]);
         $cantidades = array_filter($datos['recepciones'], fn ($value) => is_numeric($value) && (float) $value > 0);
         if ($cantidades === []) {
@@ -108,7 +108,7 @@ class Index extends Component
 
     public function cancelar(int $id, TransferenciaService $service): void
     {
-        $this->autorizarAdmin();
+        $this->autorizarAdminOGerente();
         $service->cancelar($this->transferenciaDelTenant($id)->getKey(), (int) auth()->id());
         Flux::toast(variant: 'success', text: 'Transferencia cancelada.');
     }
@@ -116,22 +116,39 @@ class Index extends Component
     private function transferenciaDelTenant(int $id): Transferencia
     {
         $transferencia = Transferencia::query()->where('tenant_id', auth()->user()->tenant_id)->findOrFail($id);
-        $admin = auth()->user()->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists();
-        $asignado = DB::table('usuario_establecimiento')->where('tenant_id', auth()->user()->tenant_id)
-            ->where('usuario_id', auth()->id())->whereIn('establecimiento_id', [$transferencia->establecimiento_origen_id, $transferencia->establecimiento_destino_id])->exists();
-        abort_unless($admin || $asignado, 404);
+        abort_unless($this->tieneAccesoAlmacen((int) $transferencia->almacen_origen_id)
+            || $this->tieneAccesoAlmacen((int) $transferencia->almacen_destino_id), 404);
 
         return $transferencia;
     }
 
-    private function autorizarAdmin(): void
+    private function autorizarAdminOGerente(): void
     {
-        abort_unless(auth()->user()->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists(), 403);
+        abort_unless(auth()->user()->roles()->whereIn('roles.slug', ['admin', 'gerente'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists(), 403);
     }
 
-    private function autorizarAlmacen(): void
+    private function autorizarOperaciones(): void
     {
-        abort_unless(auth()->user()->roles()->whereIn('roles.slug', ['admin', 'almacen'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists(), 403);
+        abort_unless(auth()->user()->roles()->whereIn('roles.slug', ['admin', 'gerente', 'almacen'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists(), 403);
+    }
+
+    private function tieneAccesoAlmacen(int $almacenId): bool
+    {
+        $user = auth()->user();
+        $tenantId = (int) $user->tenant_id;
+        $almacen = Almacen::query()->where('tenant_id', $tenantId)->find($almacenId);
+        if (! $almacen) return false;
+        if ($user->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists()) return true;
+        if ($user->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists()) {
+            return DB::table('usuario_almacen')->where('tenant_id', $tenantId)->where('usuario_id', $user->getKey())->where('almacen_id', $almacenId)->exists();
+        }
+
+        return DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)->where('usuario_id', $user->getKey())->where('establecimiento_id', $almacen->establecimiento_id)->exists();
+    }
+
+    public function puedeOperarAlmacen(int $almacenId): bool
+    {
+        return $this->tieneAccesoAlmacen($almacenId);
     }
 
     public function render()
@@ -142,13 +159,29 @@ class Index extends Component
             ->with(['almacenOrigen:id,codigo,nombre', 'almacenDestino:id,codigo,nombre', 'solicitante:id,name', 'detalles.producto:id,sku,nombre'])
             ->latest('id');
         if (! $admin) {
-            $ids = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)->where('usuario_id', auth()->id())->select('establecimiento_id');
-            $query->where(fn ($items) => $items->whereIn('establecimiento_origen_id', $ids)->orWhereIn('establecimiento_destino_id', $ids));
+            $branchIds = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)->where('usuario_id', auth()->id())->select('establecimiento_id');
+            $warehouseIds = DB::table('usuario_almacen')->where('tenant_id', $tenantId)->where('usuario_id', auth()->id())->select('almacen_id');
+            $esAlmacen = auth()->user()->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists();
+            $query->where(function ($scope) use ($esAlmacen, $warehouseIds, $branchIds): void {
+                if ($esAlmacen) {
+                    $scope->whereIn('almacen_origen_id', $warehouseIds)->orWhereIn('almacen_destino_id', $warehouseIds);
+                } else {
+                    $scope->whereIn('establecimiento_origen_id', $branchIds)->orWhereIn('establecimiento_destino_id', $branchIds);
+                }
+            });
+        }
+
+        $almacenesQuery = Almacen::query()->where('tenant_id', $tenantId)->where('activo', true)->with('establecimiento:id,nombre')->orderBy('nombre');
+        if (! $admin) {
+            $esAlmacen = auth()->user()->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists();
+            $esGerente = auth()->user()->roles()->where('roles.slug', 'gerente')->wherePivot('tenant_id', $tenantId)->exists();
+            if ($esAlmacen) $almacenesQuery->whereIn('id', DB::table('usuario_almacen')->where('tenant_id', $tenantId)->where('usuario_id', auth()->id())->select('almacen_id'));
+            elseif ($esGerente) $almacenesQuery->whereIn('establecimiento_id', DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)->where('usuario_id', auth()->id())->select('establecimiento_id'));
         }
 
         return view('livewire.transferencias.index', [
             'transferencias' => $query->paginate(20),
-            'almacenes' => Almacen::query()->where('tenant_id', $tenantId)->where('activo', true)->with('establecimiento:id,nombre')->orderBy('nombre')->get(),
+            'almacenes' => $almacenesQuery->get(),
             'productos' => auth()->user()->tenant->productos()->where('activo', true)->orderBy('nombre')->get(['productos.id', 'sku', 'nombre']),
         ])->layout('layouts.app');
     }

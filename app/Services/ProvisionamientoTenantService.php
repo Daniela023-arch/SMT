@@ -57,15 +57,17 @@ class ProvisionamientoTenantService
                 (int) $solicitud->tipo_inventario_id,
                 $solicitud->email_contacto,
             );
-            $tenant->update(['estado' => 'activo']);
+            // La aprobación administrativa crea el acceso inicial, pero no activa
+            // el servicio: el cliente debe personalizarlo y completar el primer cobro.
+            $tenant->update(['estado' => 'configuracion_pendiente']);
 
-            $fin = $this->fechaFin($plan->periodicidad);
             $suscripcion = SuscripcionTenant::query()->create([
                 'tenant_id' => $tenant->getKey(),
                 'plan_id' => $plan->getKey(),
-                'estado' => 'activa',
+                'estado' => 'personalizacion_pendiente',
+                'proveedor' => 'mercadopago',
                 'inicio_at' => now(),
-                'fin_at' => $fin,
+                'fin_at' => null,
             ]);
 
             foreach ($modulosDisponibles as $moduloId) {
@@ -88,10 +90,8 @@ class ProvisionamientoTenantService
             ]);
             $administrador->save();
 
-            $rolAdmin = Rol::query()->firstOrCreate(
-                ['tenant_id' => $tenant->getKey(), 'slug' => 'admin'],
-                ['nombre' => 'Administrador', 'es_sistema' => false],
-            );
+            app(TenantRoleService::class)->inicializar($tenant);
+            $rolAdmin = Rol::query()->where('tenant_id', $tenant->getKey())->where('slug', 'admin')->firstOrFail();
             app(AccesoTenantService::class)->asignarRol((int) $administrador->getKey(), (int) $rolAdmin->getKey(), (int) $tenant->getKey());
 
             $solicitud->update([
@@ -128,16 +128,6 @@ class ProvisionamientoTenantService
 
             return $solicitud->refresh();
         });
-    }
-
-    private function fechaFin(string $periodicidad): \Illuminate\Support\Carbon
-    {
-        return match (Str::lower($periodicidad)) {
-            'mensual', 'mes' => now()->addMonth(),
-            'trimestral', 'trimestre' => now()->addMonths(3),
-            'anual', 'año', 'ano' => now()->addYear(),
-            default => throw ValidationException::withMessages(['plan' => 'El plan debe tener periodicidad mensual, trimestral o anual.']),
-        };
     }
 
     private function auditar(int $actorId, string $accion, string $entidad, int $entidadId, array $datos): void

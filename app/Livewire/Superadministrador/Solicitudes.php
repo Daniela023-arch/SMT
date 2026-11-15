@@ -31,6 +31,11 @@ class Solicitudes extends Component
 
     public ?string $credencialesEmail = null;
 
+    public function updatedAdminNombre(): void
+    {
+        $this->resetValidation('adminNombre');
+    }
+
     public function seleccionar(int $solicitudId): void
     {
         $solicitud = SolicitudInventario::query()->with('tipoInventario')->findOrFail($solicitudId);
@@ -60,7 +65,7 @@ class Solicitudes extends Component
 
         $this->passwordTemporal = $resultado['passwordTemporal'];
         $this->credencialesEmail = $resultado['administrador']->email;
-        Flux::toast(variant: 'success', text: 'Tenant, suscripción y usuario administrador creados.');
+        Flux::toast(variant: 'success', text: 'Tenant creado. El administrador deberá personalizarlo y completar el pago para activarlo.');
     }
 
     public function rechazar(ProvisionamientoTenantService $service): void

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Almacen extends Model
 {
@@ -41,5 +42,12 @@ class Almacen extends Model
     public function existencias(): HasMany
     {
         return $this->hasMany(Existencia::class);
+    }
+
+    public function usuarios(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'usuario_almacen', 'almacen_id', 'usuario_id')
+            ->withPivot(['tenant_id', 'asignado_por'])
+            ->withTimestamps();
     }
 }

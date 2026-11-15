@@ -232,5 +232,6 @@
     @livewire('notifications')
 
     @livewireScripts
+    <x-page-loader />
 </body>
 </html>

@@ -35,6 +35,7 @@
         html.dark body.superadmin-shell [class~="text-rose-800"],
         html.dark body.superadmin-shell [class~="text-rose-900"] { color:#f3aabd !important; }
         html.dark body.superadmin-shell [class~="text-sky-700"] { color:#8ed9f5 !important; }
+        html.dark body.superadmin-shell nav a[aria-current="page"] > span:last-child { background-color:#7dd3fc !important; }
         html.dark body.superadmin-shell [class~="text-violet-700"] { color:#c8b7ff !important; }
         html.dark body.superadmin-shell [class~="border-slate-100"],
         html.dark body.superadmin-shell [class~="border-slate-200"],
@@ -118,7 +119,7 @@
                     @php
                         $activo = request()->routeIs($ruta);
                     @endphp
-                    <a href="{{ route($ruta) }}" wire:navigate @class(['group relative flex shrink-0 flex-col items-center gap-1.5 pb-3 pt-2 text-xs font-semibold transition-colors', 'text-slate-900' => $activo, 'text-slate-500 hover:text-slate-900' => ! $activo])>
+                    <a href="{{ route($ruta) }}" wire:navigate @class(['group relative flex shrink-0 flex-col items-center gap-1.5 pb-3 pt-2 text-xs font-semibold transition-colors', 'text-blue-800' => $activo, 'text-slate-500 hover:text-slate-900' => ! $activo]) @if($activo) aria-current="page" @endif>
                         <span @class(['grid size-7 place-items-center transition-transform duration-300', 'scale-110 text-blue-800' => $activo, 'text-slate-500 group-hover:-translate-y-0.5' => ! $activo])>
                             @switch($icono)
                                 @case('squares-2x2')<svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>@break
@@ -134,7 +135,7 @@
                             @endswitch
                         </span>
                         <span class="whitespace-nowrap">{{ $etiqueta }}</span>
-                        <span @class(['absolute inset-x-0 bottom-0 h-0.5 origin-center rounded-full transition-all duration-300', 'scale-x-100 bg-slate-900' => $activo, 'scale-x-0 bg-slate-200 group-hover:scale-x-100' => ! $activo])></span>
+                        <span @class(['absolute inset-x-0 bottom-0 h-0.5 origin-center rounded-full transition-all duration-300', 'scale-x-100 bg-blue-700' => $activo, 'scale-x-0 bg-slate-200 group-hover:scale-x-100' => ! $activo])></span>
                     </a>
                 @endforeach
                 @if ($nombreGrupoActual === 'Plataforma')
@@ -199,5 +200,8 @@
             requestAnimationFrame(update);
         })();
     </script>
+    @persist('page-loader')
+        <x-page-loader />
+    @endpersist
 </body>
 </html>

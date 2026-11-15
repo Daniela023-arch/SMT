@@ -13,6 +13,7 @@ use App\Http\Middleware\EnsurePlanLimit;
 use App\Http\Middleware\EnsureSubscriptionActive;
 use App\Http\Middleware\EnsureTenant;
 use App\Http\Middleware\EnsureTenantActive;
+use App\Http\Middleware\EnsureTenantOnboardingComplete;
 use App\Http\Middleware\EnsureTenantResource;
 use App\Http\Middleware\EnsureWarehouseAccess;
 
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureActiveUser::class,
             'tenant' => EnsureTenant::class,
             'tenant.active' => EnsureTenantActive::class,
+            'tenant.onboarding' => EnsureTenantOnboardingComplete::class,
             'subscription.active' => EnsureSubscriptionActive::class,
             'module' => EnsureModuleEnabled::class,
             'tenant.resource' => EnsureTenantResource::class,

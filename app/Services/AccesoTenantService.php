@@ -22,9 +22,9 @@ class AccesoTenantService
                     (int) $usuario->tenant_id !== $tenantId
                     || (int) $rol->tenant_id !== $tenantId
                     || $rol->es_sistema
-                    || ! in_array($rol->slug, ['admin', 'ventas', 'almacen'], true)
+                    || ! in_array($rol->slug, ['admin', 'gerente', 'ventas', 'almacen'], true)
                 ) {
-                    throw ValidationException::withMessages(['rol' => 'Usuario y rol deben pertenecer al mismo tenant y usar uno de sus tres roles operativos.']);
+                    throw ValidationException::withMessages(['rol' => 'El usuario y el rol deben pertenecer al mismo tenant y usar un rol operativo permitido.']);
                 }
             }
             return UsuarioRol::query()->firstOrCreate([
@@ -48,7 +48,7 @@ class AccesoTenantService
                 if ($tenantId !== null) {
                     $q->where(fn ($tenant) => $tenant->where('ur.tenant_id', $tenantId)
                         ->where('r.tenant_id', $tenantId)
-                        ->whereIn('r.slug', ['admin', 'ventas', 'almacen']));
+                        ->whereIn('r.slug', ['admin', 'gerente', 'ventas', 'almacen']));
                 } else {
                     $q->whereNull('ur.tenant_id')->whereNull('r.tenant_id')->where('r.es_sistema', true)->where('r.slug', 'superadmin');
                 }

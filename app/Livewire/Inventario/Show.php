@@ -3,6 +3,7 @@
 namespace App\Livewire\Inventario;
 
 use App\Models\Almacen;
+use App\Models\CodigoIdentificacion;
 use App\Models\Existencia;
 use App\Models\Producto;
 use App\Models\StockMovimiento;
@@ -32,6 +33,10 @@ class Show extends Component
     public string $motivo = '';
 
     public string $buscar = '';
+
+    public string $codigoEscaneado = '';
+
+    public string $tipoCodigo = 'barcode';
 
     public function mount(int $establecimiento, int $almacen): void
     {
@@ -85,21 +90,73 @@ class Show extends Component
         Flux::toast(variant: 'success', text: 'Salida registrada.');
     }
 
+    public function buscarCodigo(): void
+    {
+        $this->autorizarOperador();
+        $datos = $this->validate(['codigoEscaneado' => ['required', 'string', 'max:255']]);
+        $tenantId = (int) auth()->user()->tenant_id;
+        $codigo = trim($datos['codigoEscaneado']);
+        $producto = Producto::query()->where('tenant_id', $tenantId)->where('activo', true)
+            ->where(fn ($query) => $query->where('sku', $codigo)
+                ->orWhereHas('codigosIdentificacion', fn ($codes) => $codes->where('tenant_id', $tenantId)->where('codigo', $codigo)))
+            ->first();
+
+        if ($producto === null) {
+            $this->addError('codigoEscaneado', 'No encontramos ese código. Selecciona el producto y guarda el código para asociarlo.');
+            return;
+        }
+
+        $this->productoId = (int) $producto->getKey();
+        $this->resetErrorBag('codigoEscaneado');
+        Flux::toast(variant: 'success', text: "Producto seleccionado: {$producto->nombre}.");
+    }
+
+    public function guardarCodigo(): void
+    {
+        $this->autorizarOperador();
+        $tenantId = (int) auth()->user()->tenant_id;
+        $datos = $this->validate([
+            'productoId' => ['required', 'integer', 'min:1'],
+            'codigoEscaneado' => ['required', 'string', 'max:255'],
+            'tipoCodigo' => ['required', 'in:barcode,qr'],
+        ]);
+        $producto = Producto::query()->where('tenant_id', $tenantId)->where('activo', true)->findOrFail($datos['productoId']);
+        $codigo = trim($datos['codigoEscaneado']);
+
+        if (CodigoIdentificacion::query()->where('tenant_id', $tenantId)->where('codigo', $codigo)->exists()) {
+            $this->addError('codigoEscaneado', 'Ese código ya está asignado a un producto.');
+            return;
+        }
+
+        CodigoIdentificacion::query()->create([
+            'tenant_id' => $tenantId,
+            'producto_id' => $producto->getKey(),
+            'tipo' => $datos['tipoCodigo'],
+            'codigo' => $codigo,
+        ]);
+
+        $this->reset('codigoEscaneado');
+        Flux::toast(variant: 'success', text: 'Código asociado al producto. Ya puedes usarlo para escanear entradas.');
+    }
+
     private function autorizarOperador(): void
     {
         $user = auth()->user();
         $tenantId = (int) $user->tenant_id;
         $hasRole = $user->roles()
-            ->whereIn('roles.slug', ['admin', 'almacen'])
+            ->whereIn('roles.slug', ['admin', 'gerente', 'almacen'])
             ->wherePivot('tenant_id', $tenantId)
             ->exists();
         $warehouse = Almacen::query()->where('tenant_id', $tenantId)->where('establecimiento_id', $this->establecimiento)
             ->where('activo', true)->whereHas('establecimiento', fn ($query) => $query->where('activo', true))->find($this->almacen);
         $admin = $user->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists();
+        $isWarehouseOperator = $user->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists();
         $assigned = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)->where('usuario_id', $user->getKey())
             ->where('establecimiento_id', $this->establecimiento)->exists();
+        $warehouseAssigned = DB::table('usuario_almacen')->where('tenant_id', $tenantId)
+            ->where('usuario_id', $user->getKey())->where('almacen_id', $this->almacen)->exists();
 
-        abort_unless($hasRole && $warehouse !== null && ($admin || $assigned), 403);
+        abort_unless($hasRole && $warehouse !== null && ($admin || ($isWarehouseOperator ? $warehouseAssigned : $assigned)), 403);
     }
 
     public function render()

@@ -29,5 +29,6 @@
         @endpersist
 
         @fluxScripts
+        <x-page-loader />
     </body>
 </html>

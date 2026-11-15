@@ -6,7 +6,6 @@ use App\Models\Rol;
 use App\Models\User;
 use App\Services\AccesoTenantService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use RuntimeException;
 
 class SuperadminDemoSeeder extends Seeder
@@ -17,8 +16,8 @@ class SuperadminDemoSeeder extends Seeder
             throw new RuntimeException('El usuario de demostración solo se puede crear en APP_ENV=local.');
         }
 
-        $email = env('SUPERADMIN_EMAIL', 'superadmin@multiverse.local');
-        $password = env('SUPERADMIN_PASSWORD') ?: Str::random(32);
+        $email = env('SUPERADMIN_EMAIL', 'super@multiverse.mx');
+        $password = env('SUPERADMIN_PASSWORD') ?: 'demo1234';
         $user = User::query()->firstOrNew(['email' => $email]);
         $created = ! $user->exists;
 

@@ -306,3 +306,119 @@ body.inventra-portal {
 /* No scrollbar helper */
 .no-scrollbar              { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Navegación horizontal del portal tenant, alineada con la maqueta MULTIVERSE. */
+.tenant-shell-nav-link {
+    color: #475569;
+    border-bottom: 2px solid transparent;
+}
+.tenant-shell-nav-link:hover,
+.tenant-shell-nav-link--active {
+    color: var(--tenant-primary, #1d4ed8);
+}
+.tenant-shell-nav-link--active {
+    border-bottom-color: var(--tenant-primary, #1d4ed8);
+}
+.tenant-shell-indicator {
+    background-color: var(--tenant-primary, #1d4ed8);
+}
+.dark .tenant-shell-nav-link {
+    color: #cbd5e1;
+}
+.dark .tenant-shell-nav-link:hover,
+.dark .tenant-shell-nav-link--active {
+    color: var(--tenant-primary-dark, #93c5fd);
+}
+.dark .tenant-shell-nav-link--active {
+    border-bottom-color: var(--tenant-primary-dark, #93c5fd);
+}
+.dark .tenant-shell-indicator {
+    background-color: var(--tenant-primary-dark, #93c5fd);
+}
+
+/* MULTIVERSE / adaptación visual de la maqueta de ferreterías.
+   Intencionalmente restringido a .multiverse-workspace: no afecta superadmin. */
+.multiverse-workspace { font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif; }
+.multiverse-workspace-header { box-shadow: 0 1px 2px rgb(15 23 42 / .045); }
+.multiverse-workspace-main { animation: multiverse-enter .28s ease-out both; }
+@keyframes multiverse-enter { from { opacity: .65; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.multiverse-workspace .tenant-shell-nav-link { padding-left: .15rem; padding-right: .15rem; }
+.multiverse-workspace .tenant-shell-nav-link--active svg { transform: scale(1.09); color: var(--tenant-primary); }
+.multiverse-workspace .tenant-shell-nav-link:focus-visible { outline: 2px solid var(--tenant-primary); outline-offset: 3px; border-radius: 4px; }
+.multiverse-workspace-main article.rounded-2xl,
+.multiverse-workspace-main section.rounded-2xl { transition: box-shadow .2s ease; }
+.multiverse-workspace-main article.rounded-2xl:hover,
+.multiverse-workspace-main section.rounded-2xl:hover { box-shadow: 0 8px 24px rgb(15 23 42 / .055); }
+.multiverse-workspace-main :is(input, select, textarea):focus-visible { outline-color: var(--tenant-primary); }
+.multiverse-workspace-main button:focus-visible,
+.multiverse-workspace-main a:focus-visible { outline-offset: 2px; }
+.dark .multiverse-workspace .tenant-shell-nav-link--active svg { color: var(--tenant-primary-dark); }
+@media (prefers-reduced-motion: reduce) { .multiverse-workspace-main { animation: none; } .multiverse-workspace-main article.rounded-2xl, .multiverse-workspace-main section.rounded-2xl { transition: none; } }
+
+/* Recuperación de contraseña: animaciones cortas y discretas. */
+@keyframes auth-recovery-rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes auth-recovery-icon-in {
+    0% { opacity: 0; transform: scale(.82) rotate(-8deg); }
+    70% { opacity: 1; transform: scale(1.06) rotate(2deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+.auth-recovery-enter { animation: auth-recovery-rise .48s cubic-bezier(.2,.7,.2,1) both; }
+.auth-recovery-icon { animation: auth-recovery-icon-in .55s cubic-bezier(.2,.7,.2,1) .08s both; }
+.auth-recovery-icon svg { transition: transform .2s ease; }
+.auth-recovery-icon:hover svg { transform: scale(1.08) rotate(-4deg); }
+.auth-recovery-form { animation: auth-recovery-rise .42s cubic-bezier(.2,.7,.2,1) .12s both; }
+.auth-recovery-button { transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.auth-recovery-button:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgb(67 56 202 / .22); }
+.auth-recovery-button:active { transform: translateY(0) scale(.99); }
+@media (prefers-reduced-motion: reduce) {
+    .auth-recovery-enter, .auth-recovery-icon, .auth-recovery-form { animation: none; }
+    .auth-recovery-icon svg, .auth-recovery-button { transition: none; }
+}
+
+/* Carga de páginas: sin tarjeta, con movimiento adaptable a la orientación. */
+.page-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    background: rgb(248 250 252 / .9);
+    color: #172554;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .2s ease, visibility .2s ease;
+    backdrop-filter: blur(3px);
+}
+.dark .page-loader { background: rgb(2 6 23 / .9); color: #e2e8f0; }
+.page-loader.is-visible { opacity: 1; visibility: visible; }
+.page-loader__content { display: flex; flex-direction: column; align-items: center; gap: .9rem; }
+.page-loader__wordmark { font-size: .82rem; font-weight: 800; letter-spacing: .14em; }
+.page-loader__dots { display: flex; align-items: center; justify-content: center; gap: .55rem; min-height: 2.75rem; }
+.page-loader__circle {
+    width: .72rem;
+    height: .72rem;
+    border-radius: 9999px;
+    background: #2563eb;
+    animation: page-loader-drift .9s ease-in-out infinite;
+}
+.page-loader__circle:nth-child(2) { animation-delay: .12s; background: #3b82f6; }
+.page-loader__circle:nth-child(3) { animation-delay: .24s; background: #60a5fa; }
+.page-loader__label { color: #64748b; font-size: .78rem; font-weight: 500; }
+.dark .page-loader__label { color: #94a3b8; }
+@keyframes page-loader-drift {
+    0%, 100% { transform: translateY(-1.1rem); }
+    50% { transform: translateY(1.1rem); }
+}
+@media (orientation: portrait) {
+    @keyframes page-loader-drift {
+        0%, 100% { transform: translateX(-1.1rem); }
+        50% { transform: translateX(1.1rem); }
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .page-loader, .page-loader__circle { transition: none; animation: none; }
+}

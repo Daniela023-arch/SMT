@@ -14,6 +14,7 @@ class AuditoriaService
         ?int $tenantId = null,
         ?array $anteriores = null,
         ?array $nuevos = null,
+        ?int $establecimientoId = null,
     ): Auditoria {
         return Auditoria::query()->create([
             'usuario_id' => $usuarioId,
@@ -21,6 +22,7 @@ class AuditoriaService
             'entidad' => $entidad,
             'entidad_id' => $entidadId,
             'tenant_id' => $tenantId,
+            'establecimiento_id' => $establecimientoId ?? request()->attributes->get('establecimiento_id'),
             'datos_anteriores' => $anteriores,
             'datos_nuevos' => $nuevos,
             'ip' => request()->ip(),

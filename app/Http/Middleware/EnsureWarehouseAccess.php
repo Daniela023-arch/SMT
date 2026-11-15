@@ -45,13 +45,39 @@ class EnsureWarehouseAccess
             ->where('r.slug', 'admin')
             ->exists();
 
-        $isAssigned = DB::table('usuario_establecimiento')
+        if ($isAdmin) {
+            $request->attributes->set('almacen_id', $warehouse->getKey());
+            $request->attributes->set('establecimiento_id', $warehouse->establecimiento_id);
+
+            return $next($request);
+        }
+
+        $roles = DB::table('usuario_rol as ur')
+            ->join('roles as r', 'r.id', '=', 'ur.rol_id')
+            ->where('ur.usuario_id', $userId)
+            ->where('ur.tenant_id', $tenantId)
+            ->where('r.tenant_id', $tenantId)
+            ->pluck('r.slug');
+
+        $isAssignedToBranch = DB::table('usuario_establecimiento')
             ->where('tenant_id', $tenantId)
             ->where('usuario_id', $userId)
             ->where('establecimiento_id', $warehouse->establecimiento_id)
             ->exists();
 
-        if (! $isAdmin && ! $isAssigned) {
+        $isAssignedToWarehouse = DB::table('usuario_almacen')
+            ->where('tenant_id', $tenantId)
+            ->where('usuario_id', $userId)
+            ->where('almacen_id', $warehouse->getKey())
+            ->exists();
+
+        $isWarehouseOperator = $roles->contains('almacen');
+        $hasBranchScope = $roles->contains('gerente');
+        $hasAccess = $isWarehouseOperator
+            ? $isAssignedToWarehouse
+            : ($roles->contains('ventas') ? $isAssignedToWarehouse : ($hasBranchScope && $isAssignedToBranch));
+
+        if (! $hasAccess) {
             abort(Response::HTTP_NOT_FOUND);
         }
 

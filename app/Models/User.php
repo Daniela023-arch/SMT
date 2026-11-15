@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -50,6 +51,18 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Establecimiento::class, 'usuario_establecimiento', 'usuario_id', 'establecimiento_id')
             ->withPivot(['tenant_id', 'asignado_por'])
             ->withTimestamps();
+    }
+
+    public function almacenesAsignados(): BelongsToMany
+    {
+        return $this->belongsToMany(Almacen::class, 'usuario_almacen', 'usuario_id', 'almacen_id')
+            ->withPivot(['tenant_id', 'asignado_por'])
+            ->withTimestamps();
+    }
+
+    public function auditorias(): HasMany
+    {
+        return $this->hasMany(Auditoria::class, 'usuario_id');
     }
 
     /**

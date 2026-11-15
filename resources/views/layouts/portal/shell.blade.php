@@ -408,5 +408,6 @@
 
     @livewireScripts
     @fluxScripts
+    <x-page-loader />
 </body>
 </html>

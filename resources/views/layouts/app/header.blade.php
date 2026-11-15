@@ -80,5 +80,8 @@
         @endpersist
 
         @fluxScripts
+        @persist('page-loader')
+            <x-page-loader />
+        @endpersist
     </body>
 </html>

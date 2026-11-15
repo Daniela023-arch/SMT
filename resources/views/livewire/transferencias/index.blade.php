@@ -1,7 +1,13 @@
 <div class="mx-auto max-w-7xl space-y-6 p-6">
+    @php
+        $rolesTransferencia = auth()->user()->roles()->wherePivot('tenant_id', auth()->user()->tenant_id)->pluck('roles.slug')->all();
+        $esAdminTransferencia = in_array('admin', $rolesTransferencia, true);
+        $esGerenteTransferencia = in_array('gerente', $rolesTransferencia, true);
+        $esAlmacenTransferencia = in_array('almacen', $rolesTransferencia, true);
+    @endphp
     <div><flux:heading size="xl">Transferencias</flux:heading><flux:subheading>Solicita, autoriza, despacha y recibe mercancía entre almacenes.</flux:subheading></div>
 
-    @if(auth()->user()->roles()->whereIn('roles.slug', ['admin', 'almacen'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
+    @if(auth()->user()->roles()->whereIn('roles.slug', ['admin', 'gerente', 'almacen'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
         <form wire:submit="solicitar" class="grid gap-4 rounded-xl border border-zinc-200 p-5 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700">
             <flux:select wire:model="almacenOrigenId" label="Almacén de origen" required><flux:select.option value="0">Selecciona</flux:select.option>@foreach($almacenes as $almacen)<flux:select.option value="{{ $almacen->id }}">{{ $almacen->establecimiento?->nombre }} · {{ $almacen->nombre }}</flux:select.option>@endforeach</flux:select>
             <flux:select wire:model="almacenDestinoId" label="Almacén de destino" required><flux:select.option value="0">Selecciona</flux:select.option>@foreach($almacenes as $almacen)<flux:select.option value="{{ $almacen->id }}">{{ $almacen->establecimiento?->nombre }} · {{ $almacen->nombre }}</flux:select.option>@endforeach</flux:select>
@@ -20,6 +26,10 @@
 
     <section class="space-y-4">
         @forelse($transferencias as $transferencia)
+            @php
+                $puedeDespachar = ($esAdminTransferencia || $esGerenteTransferencia || $esAlmacenTransferencia) && ($esAdminTransferencia || $this->puedeOperarAlmacen((int) $transferencia->almacen_origen_id));
+                $puedeRecibir = ($esAdminTransferencia || $esGerenteTransferencia || $esAlmacenTransferencia) && ($esAdminTransferencia || $this->puedeOperarAlmacen((int) $transferencia->almacen_destino_id));
+            @endphp
             <article class="space-y-4 rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div><h2 class="font-semibold">{{ $transferencia->folio }}</h2><p class="text-sm text-zinc-500">{{ $transferencia->almacenOrigen?->nombre }} → {{ $transferencia->almacenDestino?->nombre }} · {{ $transferencia->solicitante?->name }}</p></div>
@@ -31,14 +41,14 @@
                     @endforeach
                 </tbody></table></div>
                 <div class="flex flex-wrap gap-2">
-                    @if($transferencia->estado === 'solicitada' && auth()->user()->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
+                    @if($transferencia->estado === 'solicitada' && auth()->user()->roles()->whereIn('roles.slug', ['admin', 'gerente'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
                         <flux:button wire:click="autorizar({{ $transferencia->id }})" variant="primary">Autorizar</flux:button>
                         <flux:input wire:model="motivoRechazo" label="Motivo para rechazar" />
                         <flux:button wire:click="rechazar({{ $transferencia->id }})" variant="danger">Rechazar</flux:button>
                     @endif
-                    @if($transferencia->estado === 'aprobada')<flux:button wire:click="despachar({{ $transferencia->id }})" variant="primary">Registrar envío</flux:button>@endif
-                    @if(in_array($transferencia->estado, ['en_transito', 'recibida_parcial'], true))<flux:button wire:click="recibir({{ $transferencia->id }})" variant="primary">Registrar recepción</flux:button>@endif
-                    @if(in_array($transferencia->estado, ['solicitada', 'aprobada'], true) && auth()->user()->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())<flux:button wire:click="cancelar({{ $transferencia->id }})">Cancelar</flux:button>@endif
+                    @if($transferencia->estado === 'aprobada' && $puedeDespachar)<flux:button wire:click="despachar({{ $transferencia->id }})" variant="primary">Registrar envío</flux:button>@endif
+                    @if(in_array($transferencia->estado, ['en_transito', 'recibida_parcial'], true) && $puedeRecibir)<flux:button wire:click="recibir({{ $transferencia->id }})" variant="primary">Registrar recepción</flux:button>@endif
+                    @if(in_array($transferencia->estado, ['solicitada', 'aprobada'], true) && ($esAdminTransferencia || $esGerenteTransferencia))<flux:button wire:click="cancelar({{ $transferencia->id }})">Cancelar</flux:button>@endif
                 </div>
             </article>
         @empty

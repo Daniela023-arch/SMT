@@ -26,8 +26,9 @@ class TransferenciaService
 
             $origen = $this->almacenActivo($tenantId, $almacenOrigenId);
             $destino = $this->almacenActivo($tenantId, $almacenDestinoId);
-            $this->validarUsuario($usuarioId, $tenantId, ['admin', 'almacen']);
-            $this->validarAccesoEstablecimiento($usuarioId, $tenantId, (int) $origen->establecimiento_id);
+            $this->validarUsuario($usuarioId, $tenantId, ['admin', 'gerente', 'almacen']);
+            $this->validarAccesoAlmacen($usuarioId, $tenantId, $origen);
+            $this->validarAccesoAlmacen($usuarioId, $tenantId, $destino);
 
             $transferencia = Transferencia::query()->create([
                 'tenant_id' => $tenantId,
@@ -92,7 +93,8 @@ class TransferenciaService
     {
         return DB::transaction(function () use ($transferenciaId, $administradorId, $motivo): Transferencia {
             $transferencia = Transferencia::query()->lockForUpdate()->findOrFail($transferenciaId);
-            $this->validarUsuario($administradorId, (int) $transferencia->tenant_id, ['admin']);
+            $this->validarUsuario($administradorId, (int) $transferencia->tenant_id, ['admin', 'gerente']);
+            $this->validarAccesoTransferencia($administradorId, $transferencia);
 
             if ($transferencia->estado !== 'solicitada') {
                 throw ValidationException::withMessages(['transferencia' => 'Solo se pueden rechazar transferencias solicitadas.']);
@@ -118,8 +120,8 @@ class TransferenciaService
                 throw ValidationException::withMessages(['transferencia' => 'Solo se pueden despachar transferencias aprobadas.']);
             }
 
-            $this->validarUsuario($usuarioId, (int) $transferencia->tenant_id, ['admin', 'almacen']);
-            $this->validarAccesoEstablecimiento($usuarioId, (int) $transferencia->tenant_id, (int) $transferencia->establecimiento_origen_id);
+            $this->validarUsuario($usuarioId, (int) $transferencia->tenant_id, ['admin', 'gerente', 'almacen']);
+            $this->validarAccesoAlmacen($usuarioId, (int) $transferencia->tenant_id, (int) $transferencia->almacen_origen_id);
 
             foreach ($transferencia->detalles as $detalle) {
                 $this->inventario->registrarSalidaDeAlmacen(
@@ -155,8 +157,8 @@ class TransferenciaService
                 throw ValidationException::withMessages(['transferencia' => 'La transferencia no está en tránsito o no hay cantidades por recibir.']);
             }
 
-            $this->validarUsuario($usuarioId, (int) $transferencia->tenant_id, ['admin', 'almacen']);
-            $this->validarAccesoEstablecimiento($usuarioId, (int) $transferencia->tenant_id, (int) $transferencia->establecimiento_destino_id);
+            $this->validarUsuario($usuarioId, (int) $transferencia->tenant_id, ['admin', 'gerente', 'almacen']);
+            $this->validarAccesoAlmacen($usuarioId, (int) $transferencia->tenant_id, (int) $transferencia->almacen_destino_id);
 
             foreach ($cantidadesRecibidas as $detalleId => $cantidad) {
                 $detalle = $transferencia->detalles->firstWhere('id', (int) $detalleId);
@@ -203,7 +205,8 @@ class TransferenciaService
     {
         return DB::transaction(function () use ($transferenciaId, $usuarioId): Transferencia {
             $transferencia = Transferencia::query()->lockForUpdate()->findOrFail($transferenciaId);
-            $this->validarUsuario($usuarioId, (int) $transferencia->tenant_id, ['admin']);
+            $this->validarUsuario($usuarioId, (int) $transferencia->tenant_id, ['admin', 'gerente']);
+            $this->validarAccesoTransferencia($usuarioId, $transferencia);
 
             if (! in_array($transferencia->estado, ['solicitada', 'aprobada'], true)) {
                 throw ValidationException::withMessages(['transferencia' => 'No se puede cancelar una transferencia que ya fue despachada.']);
@@ -219,7 +222,8 @@ class TransferenciaService
     {
         return DB::transaction(function () use ($transferenciaId, $administradorId, $estado): Transferencia {
             $transferencia = Transferencia::query()->lockForUpdate()->findOrFail($transferenciaId);
-            $this->validarUsuario($administradorId, (int) $transferencia->tenant_id, ['admin']);
+            $this->validarUsuario($administradorId, (int) $transferencia->tenant_id, ['admin', 'gerente']);
+            $this->validarAccesoTransferencia($administradorId, $transferencia);
 
             if ($transferencia->estado !== 'solicitada') {
                 throw ValidationException::withMessages(['transferencia' => 'Solo se pueden autorizar transferencias solicitadas.']);
@@ -251,18 +255,34 @@ class TransferenciaService
         return $usuario;
     }
 
-    private function validarAccesoEstablecimiento(int $usuarioId, int $tenantId, int $establecimientoId): void
+    private function validarAccesoAlmacen(int $usuarioId, int $tenantId, Almacen|int $almacen): void
     {
-        $esAdmin = User::query()->whereKey($usuarioId)
-            ->whereHas('roles', fn ($query) => $query->where('roles.slug', 'admin')->where('usuario_rol.tenant_id', $tenantId))
-            ->exists();
+        $almacen = $almacen instanceof Almacen ? $almacen : Almacen::query()->where('tenant_id', $tenantId)->findOrFail($almacen);
+        $roles = User::query()->whereKey($usuarioId)->firstOrFail()->roles()
+            ->where('usuario_rol.tenant_id', $tenantId)->pluck('roles.slug')->all();
+        if (in_array('admin', $roles, true)) return;
 
-        if (! $esAdmin && ! DB::table('usuario_establecimiento')
-            ->where('tenant_id', $tenantId)
+        $acceso = in_array('almacen', $roles, true)
+            ? DB::table('usuario_almacen')->where('tenant_id', $tenantId)->where('usuario_id', $usuarioId)->where('almacen_id', $almacen->getKey())->exists()
+            : DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)->where('usuario_id', $usuarioId)->where('establecimiento_id', $almacen->establecimiento_id)->exists();
+        if (! $acceso) {
+            throw ValidationException::withMessages(['almacen' => 'No tienes acceso a uno de los almacenes de esta transferencia.']);
+        }
+    }
+
+    private function validarAccesoTransferencia(int $usuarioId, Transferencia $transferencia): void
+    {
+        $tenantId = (int) $transferencia->tenant_id;
+        $roles = User::query()->whereKey($usuarioId)->firstOrFail()->roles()
+            ->where('usuario_rol.tenant_id', $tenantId)->pluck('roles.slug')->all();
+        if (in_array('admin', $roles, true)) return;
+
+        $tocaSucursalAsignada = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)
             ->where('usuario_id', $usuarioId)
-            ->where('establecimiento_id', $establecimientoId)
-            ->exists()) {
-            throw ValidationException::withMessages(['establecimiento' => 'El usuario no tiene acceso al establecimiento.']);
+            ->whereIn('establecimiento_id', [$transferencia->establecimiento_origen_id, $transferencia->establecimiento_destino_id])
+            ->exists();
+        if (! $tocaSucursalAsignada) {
+            throw ValidationException::withMessages(['transferencia' => 'No tienes acceso a las sucursales de esta transferencia.']);
         }
     }
 

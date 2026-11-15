@@ -38,5 +38,6 @@
         <div class="border-t border-white/10 px-4 py-5 text-center text-xs text-slate-500">© {{ date('Y') }} MULTIVERSE. Todos los derechos reservados.</div>
     </footer>
     @livewireScripts
+    <x-page-loader />
 </body>
 </html>

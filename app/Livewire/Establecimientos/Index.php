@@ -37,6 +37,26 @@ class Index extends Component
 
     public int $usuarioId = 0;
 
+    public function mount(): void
+    {
+        $user = auth()->user();
+        $tenantId = (int) $user->tenant_id;
+        $sales = $user->roles()->where('roles.slug', 'ventas')->wherePivot('tenant_id', $tenantId)->exists();
+        if ($sales) {
+            $point = DB::table('usuario_almacen')->join('almacenes', 'almacenes.id', '=', 'usuario_almacen.almacen_id')
+                ->join('establecimientos', 'establecimientos.id', '=', 'almacenes.establecimiento_id')
+                ->where('usuario_almacen.tenant_id', $tenantId)->where('usuario_almacen.usuario_id', $user->getKey())
+                ->where('almacenes.tenant_id', $tenantId)->where('almacenes.activo', true)->where('establecimientos.activo', true)
+                ->first(['almacenes.id', 'almacenes.establecimiento_id']);
+            if ($point === null) {
+                $this->redirectRoute('dashboard', navigate: true);
+
+                return;
+            }
+            $this->redirectRoute('ventas.index', ['establecimiento' => $point->establecimiento_id, 'almacen' => $point->id], navigate: true);
+        }
+    }
+
     public function crear(EstablecimientoService $service): void
     {
         $this->autorizarAdmin();
@@ -56,13 +76,14 @@ class Index extends Component
 
     public function crearAlmacen(EstablecimientoService $service): void
     {
-        $this->autorizarAdmin();
         $tenantId = (int) auth()->user()->tenant_id;
         $datos = $this->validate([
             'establecimientoSeleccionado' => ['required', 'integer', 'min:1'],
             'codigoAlmacen' => ['required', 'string', 'max:40', Rule::unique('almacenes', 'codigo')->where('establecimiento_id', $this->establecimientoSeleccionado)],
             'nombreAlmacen' => ['required', 'string', 'max:255'],
         ]);
+
+        $this->autorizarAdminOGerenteEnSucursal((int) $datos['establecimientoSeleccionado']);
 
         $service->crearAlmacen($tenantId, $datos['establecimientoSeleccionado'], $datos['codigoAlmacen'], $datos['nombreAlmacen']);
         $this->reset('codigoAlmacen', 'nombreAlmacen');
@@ -72,7 +93,7 @@ class Index extends Component
     public function crearUbicacion(): void
     {
         abort_unless(auth()->user()->roles()
-            ->whereIn('roles.slug', ['admin', 'almacen'])
+            ->whereIn('roles.slug', ['admin', 'gerente', 'almacen'])
             ->wherePivot('tenant_id', auth()->user()->tenant_id)
             ->exists(), 403);
 
@@ -126,22 +147,45 @@ class Index extends Component
         $tenantId = (int) $user->tenant_id;
         abort_unless($almacen->activo && $almacen->establecimiento()->where('activo', true)->exists(), 404);
         $admin = $user->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists();
+        $gerente = $user->roles()->where('roles.slug', 'gerente')->wherePivot('tenant_id', $tenantId)->exists();
         $assigned = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)
             ->where('usuario_id', $user->getKey())->where('establecimiento_id', $almacen->establecimiento_id)->exists();
-        abort_unless($admin || $assigned, 404);
+        $assignedWarehouse = DB::table('usuario_almacen')->where('tenant_id', $tenantId)
+            ->where('usuario_id', $user->getKey())->where('almacen_id', $almacen->getKey())->exists();
+        $isWarehouseOperator = $user->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists();
+        abort_unless($admin || ($gerente && $assigned) || ($isWarehouseOperator && $assignedWarehouse), 404);
+    }
+
+    private function autorizarAdminOGerenteEnSucursal(int $establecimientoId): void
+    {
+        $user = auth()->user();
+        $tenantId = (int) $user->tenant_id;
+        $admin = $user->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists();
+        $gerente = $user->roles()->where('roles.slug', 'gerente')->wherePivot('tenant_id', $tenantId)->exists();
+        $assigned = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)
+            ->where('usuario_id', $user->getKey())->where('establecimiento_id', $establecimientoId)->exists();
+        abort_unless($admin || ($gerente && $assigned), 403);
     }
 
     public function render()
     {
         $tenantId = (int) auth()->user()->tenant_id;
-        $query = Establecimiento::query()->where('tenant_id', $tenantId)->with('almacenes.ubicaciones')->orderBy('nombre');
-        if (! auth()->user()->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists()) {
-            $query->whereHas('usuarios', fn ($users) => $users->where('users.id', auth()->id()));
+        $user = auth()->user();
+        $isAdmin = $user->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists();
+        $isWarehouseOperator = $user->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists();
+        $query = Establecimiento::query()->where('tenant_id', $tenantId)
+            ->with(['almacenes' => function ($warehouses) use ($user, $tenantId, $isWarehouseOperator, $isAdmin): void {
+                $warehouses->with('ubicaciones');
+                if ($isWarehouseOperator && ! $isAdmin) {
+                    $warehouses->whereHas('usuarios', fn ($users) => $users->where('users.id', $user->getKey())->where('usuario_almacen.tenant_id', $tenantId));
+                }
+            }])->orderBy('nombre');
+        if (! $isAdmin) {
+            $query->whereHas('usuarios', fn ($users) => $users->where('users.id', $user->getKey())->where('usuario_establecimiento.tenant_id', $tenantId));
         }
 
         return view('livewire.establecimientos.index', [
             'establecimientos' => $query->get(),
-            'usuarios' => auth()->user()->tenant->usuarios()->orderBy('name')->get(['users.id', 'name', 'email']),
         ])->layout('layouts.app');
     }
 }
