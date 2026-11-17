@@ -99,6 +99,12 @@ class Index extends Component
         $this->lineas[] = ['producto_id' => (string) $productoId, 'cantidad' => '1', 'lote_id' => '', 'unidad_inventario_id' => ''];
     }
 
+    public function agregarProductoDesdeBusqueda(int $productoId): void
+    {
+        $this->agregarProducto($productoId);
+        $this->reset('busquedaProducto');
+    }
+
     public function buscarCodigo(): void
     {
         $this->autorizarVentas();
@@ -355,27 +361,36 @@ class Index extends Component
             ->where('establecimiento_id', $this->establecimiento)->where('almacen_id', $this->almacen)
             ->with(['detallesVenta.producto', 'pagos', 'usuario:id,name'])->latest('id')->paginate(20);
         $productosEnCarrito = collect($this->lineas)->pluck('producto_id')->filter()->map(fn ($id) => (int) $id)->all();
+        $esVendedor = auth()->user()->roles()->where('roles.slug', 'ventas')->wherePivot('tenant_id', $tenantId)->exists();
         $productos = Producto::query()->where('tenant_id', $tenantId)->where('activo', true)
-            ->when(filled($this->busquedaProducto), function ($query) use ($productosEnCarrito): void {
+            ->withSum(['existencias as stock_disponible' => fn ($query) => $query
+                ->where('tenant_id', $tenantId)->where('almacen_id', $this->almacen)], 'cantidad')
+            ->when($esVendedor, fn ($query) => $query->whereHas('existencias', fn ($existencias) => $existencias
+                ->where('tenant_id', $tenantId)->where('almacen_id', $this->almacen)->where('cantidad', '>', 0)))
+            ->when(filled($this->busquedaProducto), function ($query): void {
                 $termino = trim($this->busquedaProducto);
-                $query->where(function ($builder) use ($termino, $productosEnCarrito): void {
+                $query->where(function ($builder) use ($termino): void {
                     $builder->where('nombre', 'ilike', "%{$termino}%")
                         ->orWhere('sku', 'ilike', "%{$termino}%");
-                    if ($productosEnCarrito !== []) {
-                        $builder->orWhereIn('id', $productosEnCarrito);
-                    }
                 });
             })
             ->orderBy('nombre')->limit(60)->get(['id', 'sku', 'nombre', 'unidad_medida', 'precio_venta', 'requiere_serie']);
         if ($productosEnCarrito !== []) {
             $productos = $productos->merge(Producto::query()->where('tenant_id', $tenantId)->where('activo', true)
                 ->whereIn('id', $productosEnCarrito)
+                ->withSum(['existencias as stock_disponible' => fn ($query) => $query
+                    ->where('tenant_id', $tenantId)->where('almacen_id', $this->almacen)], 'cantidad')
                 ->get(['id', 'sku', 'nombre', 'unidad_medida', 'precio_venta', 'requiere_serie']))
                 ->unique('id')->values();
         }
-        $lotes = Lote::query()->where('tenant_id', $tenantId)->whereIn('producto_id', $productosEnCarrito)
-            ->orderBy('numero_lote')->get(['id', 'producto_id', 'numero_lote', 'fecha_caducidad']);
+        $unidadesPorProducto = $productosEnCarrito === []
+            ? collect()
+            : UnidadInventario::query()->where('tenant_id', $tenantId)->whereIn('producto_id', $productosEnCarrito)
+                ->where('estado', 'disponible')
+                ->whereHas('ubicacion', fn ($query) => $query->where('almacen_id', $this->almacen))
+                ->orderBy('numero_serie')->get(['id', 'producto_id', 'numero_serie', 'codigo_activo'])
+                ->groupBy('producto_id');
 
-        return view('livewire.ventas.index', compact('ventas', 'productos', 'lotes'))->layout('layouts.app');
+        return view('livewire.ventas.index', compact('ventas', 'productos', 'unidadesPorProducto'))->layout('layouts.app');
     }
 }

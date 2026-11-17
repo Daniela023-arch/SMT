@@ -1,10 +1,11 @@
 <div class="space-y-7">
     @php
-        $carrito = collect($lineas)->map(function ($linea) use ($productos) {
+        $carrito = collect($lineas)->map(function ($linea, $indice) use ($productos) {
             $producto = $productos->firstWhere('id', (int) ($linea['producto_id'] ?? 0));
-            return ['producto' => $producto, 'cantidad' => (float) ($linea['cantidad'] ?: 0)];
+            return ['indice' => $indice, 'producto' => $producto, 'cantidad' => (float) ($linea['cantidad'] ?: 0)];
         })->filter(fn ($linea) => $linea['producto'] !== null);
         $totalCarrito = $carrito->sum(fn ($linea) => (float) $linea['producto']->precio_venta * $linea['cantidad']);
+        $esPersonalVentas = auth()->user()->roles()->where('roles.slug', 'ventas')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists();
     @endphp
 
     <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -42,16 +43,30 @@
             <div class="border-b border-slate-200 p-5 dark:border-slate-800 sm:p-6">
                 <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div><h2 class="font-semibold text-slate-950 dark:text-white">Lector de códigos</h2><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">El lector está listo para recibir el siguiente artículo.</p></div>
-                    @unless (auth()->user()->roles()->where('roles.slug', 'ventas')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
-                    <label class="relative block w-full sm:max-w-xs">
-                        <span class="sr-only">Buscar por nombre o SKU</span>
-                        <svg viewBox="0 0 24 24" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
-                        <input type="search" wire:model.live.debounce.300ms="busquedaProducto" placeholder="Buscar producto o SKU…" class="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-400 dark:focus:border-emerald-400" />
-                    </label>
-                    @endunless
                 </div>
-                <div class="mt-5 grid gap-5 rounded-xl bg-slate-50 p-4 dark:bg-slate-950 lg:grid-cols-[minmax(0,1fr)_minmax(240px,0.8fr)]">
-                    <x-barcode-scanner model="codigoEscaneado" action="buscarCodigo" label="Escanear para agregar a la venta" />
+                <div class="mt-5 grid gap-5 rounded-xl bg-slate-50 p-4 dark:bg-slate-950 {{ $esPersonalVentas ? 'lg:grid-cols-1' : 'lg:grid-cols-[minmax(0,1fr)_minmax(240px,0.8fr)]' }}">
+                    <div>
+                        <x-barcode-scanner model="codigoEscaneado" action="buscarCodigo" label="Escanear" placeholder="Escanea el código de barras o QR" :camera="false" :submit="false" status="Conecta el lector USB/Bluetooth y escanea el producto; se agregará automáticamente." />
+                        <div class="relative mt-4">
+                            <label for="buscar-producto-pos" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200">Buscar producto por nombre o SKU</label>
+                            <div class="relative">
+                                <svg viewBox="0 0 24 24" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+                                <input id="buscar-producto-pos" type="search" wire:model.live.debounce.250ms="busquedaProducto" autocomplete="off" placeholder="Escribe el nombre o SKU…" class="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-400" />
+                            </div>
+                            @if (filled($busquedaProducto))
+                                <div class="mt-2 max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900" role="listbox" aria-label="Resultados de productos">
+                                    @forelse ($productos as $resultado)
+                                        <button type="button" wire:key="buscar-pos-{{ $resultado->id }}" wire:click="agregarProductoDesdeBusqueda({{ $resultado->id }})" class="flex w-full items-center justify-between gap-3 border-b border-slate-100 px-3 py-2.5 text-left last:border-b-0 hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-none dark:border-slate-800 dark:hover:bg-slate-800 dark:focus-visible:bg-slate-800" role="option">
+                                            <span class="min-w-0"><span class="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $resultado->nombre }}</span><span class="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">{{ $resultado->sku }}</span></span>
+                                            <span class="shrink-0 text-right"><span class="block text-sm font-bold text-slate-900 dark:text-white">${{ number_format((float) $resultado->precio_venta, 2) }}</span><span class="text-[11px] font-semibold text-blue-700 dark:text-blue-300">Agregar +</span></span>
+                                        </button>
+                                    @empty
+                                        <p class="px-3 py-4 text-sm text-slate-500 dark:text-slate-400">No hay productos con ese nombre o SKU.</p>
+                                    @endforelse
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                     @unless (auth()->user()->roles()->where('roles.slug', 'ventas')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
                     <div class="space-y-3">
                         <label class="block text-xs font-semibold text-slate-800 dark:text-slate-100">Si el código aún no está asociado, elige el producto<select wire:model="productoCodigoId" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"><option value="0">Selecciona un producto</option>@foreach($productos as $producto)<option value="{{ $producto->id }}">{{ $producto->sku }} · {{ $producto->nombre }}</option>@endforeach</select></label>
@@ -61,40 +76,53 @@
                 </div>
             </div>
 
-            <div class="p-5 sm:p-6"><div class="flex min-h-32 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-7 text-center dark:border-slate-700 dark:bg-slate-950"><span class="grid size-11 place-items-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"><svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5v14m3-14v14m3-14v14m4-14v14m3-14v14m3-14v14"/></svg></span><p class="mt-3 font-semibold text-slate-800 dark:text-slate-100">Escanea o escribe un código para agregar un producto</p><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Los artículos encontrados aparecerán en la venta actual.</p></div></div>
+            <div class="border-t border-slate-200 p-5 dark:border-slate-800 sm:p-6">
+                <div class="mb-4 flex items-end justify-between gap-3">
+                    <div><h2 class="font-semibold text-slate-950 dark:text-white">Productos agregados</h2><p class="mt-1 text-xs text-slate-600 dark:text-slate-300">Los artículos escaneados aparecerán aquí.</p></div>
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ $carrito->count() }} {{ $carrito->count() === 1 ? 'producto' : 'productos' }}</span>
+                </div>
+                @if ($carrito->isNotEmpty())
+                    <div class="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3" aria-live="polite">
+                        @foreach ($carrito as $indiceArticulo => $articulo)
+                            @php($productoAgregado = $articulo['producto'])
+                            <article wire:key="producto-agregado-{{ $productoAgregado->id }}-{{ $indiceArticulo }}" class="flex min-h-28 items-center gap-3 rounded-xl border border-emerald-200 bg-white p-4 shadow-sm transition dark:border-emerald-900/70 dark:bg-slate-900">
+                                <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"><svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m4 7 8-4 8 4v10l-8 4-8-4V7Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg></span>
+                                <div class="min-w-0 flex-1">
+                                    <span class="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $productoAgregado->nombre }}</span>
+                                    <span class="mt-1 block truncate text-xs text-slate-500 dark:text-slate-400">{{ $productoAgregado->sku }}</span>
+                                    <span class="mt-2 flex items-center justify-between gap-2">
+                                        <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Cantidad: {{ number_format($articulo['cantidad'], 3) }} {{ $productoAgregado->unidad_medida }}</span>
+                                        <span class="text-sm font-bold text-slate-900 dark:text-white">${{ number_format((float) $productoAgregado->precio_venta * $articulo['cantidad'], 2) }}</span>
+                                    </span>
+                                    @if ($productoAgregado->requiere_serie)
+                                        <label class="mt-3 block text-xs font-semibold text-slate-700 dark:text-slate-200">Unidad serializada
+                                            <select wire:model="lineas.{{ $articulo['indice'] }}.unidad_inventario_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                                                <option value="">Selecciona número de serie</option>
+                                                @foreach ($unidadesPorProducto->get($productoAgregado->id, collect()) as $unidad)
+                                                    <option value="{{ $unidad->id }}">{{ $unidad->numero_serie ?: $unidad->codigo_activo ?: 'Unidad '.$unidad->id }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                    @endif
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-7 text-center dark:border-slate-700 dark:bg-slate-950">
+                        <span class="grid size-11 place-items-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"><svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5v14m3-14v14m3-14v14m4-14v14m3-14v14m3-14v14"/></svg></span>
+                        <p class="mt-3 font-semibold text-slate-800 dark:text-slate-100">Aún no agregas productos</p>
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Escanea un código para que el producto aparezca aquí.</p>
+                    </div>
+                @endif
+            </div>
         </article>
 
         <aside class="xl:sticky xl:top-40">
-            <form wire:submit="registrarVenta" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
                     <div><h2 class="font-semibold text-slate-950 dark:text-white">Venta actual</h2><p class="mt-1 text-xs text-slate-600 dark:text-slate-300">{{ $carrito->count() }} {{ $carrito->count() === 1 ? 'artículo' : 'artículos' }}</p></div>
                     <span class="grid size-9 place-items-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"><svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></span>
-                </div>
-
-                <div class="max-h-[48vh] min-h-32 divide-y divide-slate-100 overflow-y-auto px-5 dark:divide-slate-800">
-                    @if($carrito->isEmpty())
-                        <div class="py-10 text-center"><span class="mx-auto grid size-12 place-items-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300"><svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></span><p class="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">Tu carrito está vacío</p><p class="mt-1 text-xs text-slate-600 dark:text-slate-300">Agrega productos desde el catálogo.</p></div>
-                    @else
-                    @foreach($lineas as $indice => $linea)
-                        @php($producto = $productos->firstWhere('id', (int) ($linea['producto_id'] ?? 0)))
-                        @if($producto)
-                            <div wire:key="carrito-{{ $indice }}" class="space-y-3 py-4">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0"><p class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ $producto->nombre }}</p><p class="mt-0.5 text-xs text-slate-600 dark:text-slate-300">${{ number_format((float) $producto->precio_venta, 2) }} · {{ $producto->unidad_medida }}</p></div>
-                                    <button type="button" wire:click="quitarLinea({{ $indice }})" class="rounded-md p-1 text-slate-500 hover:bg-rose-50 hover:text-rose-700 dark:text-slate-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-200" aria-label="Quitar {{ $producto->nombre }}"><svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg></button>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <label class="text-xs font-medium text-slate-700 dark:text-slate-200">Cantidad<input wire:model.live="lineas.{{ $indice }}.cantidad" type="number" min="0.001" step="0.001" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></label>
-                                    <div class="self-end pb-2 text-right text-sm font-semibold text-slate-900 dark:text-white">${{ number_format((float) $producto->precio_venta * (float) ($linea['cantidad'] ?: 0), 2) }}</div>
-                                    @if($producto->requiere_serie)
-                                        <label class="col-span-2 text-xs font-medium text-slate-700 dark:text-slate-200">Unidad serializada<input wire:model="lineas.{{ $indice }}.unidad_inventario_id" type="number" min="1" placeholder="ID de unidad disponible" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></label>
-                                    @endif
-                                    <label class="col-span-2 text-xs font-medium text-slate-700 dark:text-slate-200">Lote <span class="font-normal text-slate-500 dark:text-slate-400">(opcional)</span><select wire:model="lineas.{{ $indice }}.lote_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"><option value="">Sin lote específico</option>@foreach($lotes->where('producto_id', $producto->id) as $lote)<option value="{{ $lote->id }}">{{ $lote->numero_lote }}@if($lote->fecha_caducidad) · caduca {{ $lote->fecha_caducidad->format('d/m/Y') }}@endif</option>@endforeach</select>@if($lotes->where('producto_id', $producto->id)->isEmpty())<span class="mt-1 block font-normal text-slate-500 dark:text-slate-400">Este producto todavía no tiene lotes registrados.</span>@endif</label>
-                                </div>
-                            </div>
-                        @endif
-                    @endforeach
-                    @endif
                 </div>
 
                 <div class="border-t border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
@@ -121,10 +149,9 @@
                     <button type="button" wire:click="cobrarVenta" wire:loading.attr="disabled" wire:target="cobrarVenta" @disabled($carrito->isEmpty()) class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400 dark:focus-visible:ring-offset-slate-900">
                         <span wire:loading.remove wire:target="cobrarVenta">Cobrar ${{ number_format($totalCarrito, 2) }} MXN</span><span wire:loading wire:target="cobrarVenta">Procesando venta…</span>
                     </button>
-                    <button type="submit" wire:loading.attr="disabled" wire:target="registrarVenta" @disabled($carrito->isEmpty()) class="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Guardar como borrador</button>
                     <p class="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">Cobrar confirma la venta, descuenta existencias y registra el pago en una sola operación.</p>
                 </div>
-            </form>
+            </div>
         </aside>
     </section>
 
