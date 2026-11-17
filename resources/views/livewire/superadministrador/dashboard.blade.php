@@ -39,14 +39,14 @@
                 <svg viewBox="0 0 600 200" class="h-full w-full overflow-visible" role="img" aria-label="Gráfica de crecimiento mensual de tenants">
                     <defs><linearGradient id="growthFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#334fba" stop-opacity=".20"/><stop offset="100%" stop-color="#334fba" stop-opacity=".01"/></linearGradient></defs>
                     @foreach([35, 75, 115, 155] as $gridY)<line x1="20" y1="{{ $gridY }}" x2="580" y2="{{ $gridY }}" stroke="#e8ebf1" stroke-dasharray="4 5"/>@endforeach
-                    <path d="{{ $areaCrecimiento }}" fill="url(#growthFill)"/>
-                    <polyline points="{{ $puntosCrecimiento }}" fill="none" stroke="#334fba" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path data-tenant-growth-area d="{{ $areaCrecimiento }}" fill="url(#growthFill)" opacity="0"/>
+                    <polyline data-tenant-growth-line points="{{ $puntosCrecimiento }}" fill="none" stroke="#334fba" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
                     @foreach($crecimiento->values() as $indice => $mes)
                         @php
                             $x = 20 + ($indice * 560 / max(1, $crecimiento->count() - 1));
                             $y = 160 - (($mes['total'] / $maxCrecimiento) * 125);
                         @endphp
-                        <circle cx="{{ $x }}" cy="{{ $y }}" r="4" fill="white" stroke="#334fba" stroke-width="2.5"><title>{{ $mes['mes'] }}: {{ $mes['total'] }} tenants</title></circle>
+                        <rect data-tenant-growth-point x="{{ $x - 4 }}" y="{{ $y - 4 }}" width="8" height="8" rx="1.5" fill="white" stroke="#334fba" stroke-width="2.5" opacity="0"><title>{{ $mes['mes'] }}: {{ $mes['total'] }} tenants</title></rect>
                         <text x="{{ $x }}" y="190" text-anchor="middle" font-size="11" fill="#737b8c">{{ $mes['mes'] }}</text>
                     @endforeach
                 </svg>

@@ -6,33 +6,46 @@
             <p class="mt-2 max-w-2xl text-slate-600 dark:text-slate-300">Configura la identidad visual, importa tu catálogo si ya lo tienes y termina con el pago del plan para activar el espacio.</p>
         </header>
 
-        <div class="mb-6 grid gap-3 sm:grid-cols-3" aria-label="Pasos de configuración">
-            <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">1. Personalización</div>
-            <div class="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">2. Catálogo opcional</div>
-            <div class="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">3. Pago y activación</div>
+        <div class="mb-8 px-1" aria-label="Pasos de configuración">
+            <div class="relative grid grid-cols-3">
+                <div class="absolute left-[16.666%] right-[16.666%] top-5 h-1 rounded-full bg-slate-200 dark:bg-slate-700" aria-hidden="true">
+                    <div class="h-full rounded-full bg-blue-600 transition-[width] duration-500 ease-out dark:bg-blue-400" style="width: {{ (($paso - 1) / 2) * 100 }}%"></div>
+                </div>
+                @foreach ([1 => 'Personalización', 2 => 'Catálogo', 3 => 'Pago y activación'] as $numero => $etiqueta)
+                    @php($completado = $paso > $numero)
+                    @php($actual = $paso === $numero)
+                    <div class="relative flex flex-col items-center gap-2 text-center" @if($actual) aria-current="step" @endif>
+                        <span class="grid size-10 place-items-center rounded-full border-2 text-sm font-bold transition-all duration-300 {{ $completado || $actual ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-700/20 dark:border-blue-400 dark:bg-blue-500' : 'border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400' }}">{{ $numero }}</span>
+                        <span class="text-xs font-semibold sm:text-sm {{ $actual ? 'text-blue-800 dark:text-blue-300' : ($completado ? 'text-slate-700 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400') }}">{{ $etiqueta }}</span>
+                    </div>
+                @endforeach
+            </div>
         </div>
 
         @if ($suscripcion)
             <section class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
+                @if ($paso === 1)
                 <div>
                     <h2 class="text-lg font-semibold">Identidad de tu empresa</h2>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Los colores y el logotipo aparecerán en el espacio de trabajo.</p>
-                    <div class="mt-5 grid gap-5 sm:grid-cols-2">
-                        <label class="block text-sm font-medium">Color principal
-                            <div class="mt-2 flex items-center gap-3 rounded-lg border border-slate-200 p-2 dark:border-slate-700">
-                                <input type="color" wire:model="colorPrimario" class="size-10 cursor-pointer rounded border-0 bg-transparent p-0">
-                                <input type="text" wire:model="colorPrimario" maxlength="7" class="w-full border-0 bg-transparent font-mono text-sm focus:ring-0">
-                            </div>
-                            @error('colorPrimario') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
-                        </label>
-                        <label class="block text-sm font-medium">Color secundario
-                            <div class="mt-2 flex items-center gap-3 rounded-lg border border-slate-200 p-2 dark:border-slate-700">
-                                <input type="color" wire:model="colorSecundario" class="size-10 cursor-pointer rounded border-0 bg-transparent p-0">
-                                <input type="text" wire:model="colorSecundario" maxlength="7" class="w-full border-0 bg-transparent font-mono text-sm focus:ring-0">
-                            </div>
-                            @error('colorSecundario') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
-                        </label>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Elige una de estas cuatro combinaciones para personalizar los colores del espacio.</p>
+                    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                        @foreach ($paletas as $id => $paleta)
+                            <button type="button" wire:click="seleccionarPaleta('{{ $id }}')" aria-pressed="{{ $paletaSeleccionada === $id ? 'true' : 'false' }}" class="flex min-h-20 items-center gap-4 rounded-xl border-2 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-sm {{ $paletaSeleccionada === $id ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-100 dark:border-blue-400 dark:bg-blue-950/40 dark:ring-blue-900' : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600' }}">
+                                <span class="flex shrink-0 -space-x-2" aria-hidden="true">
+                                    <span class="size-9 rounded-full border-2 border-white shadow-sm dark:border-slate-800" style="background-color: {{ $paleta['primario'] }}"></span>
+                                    <span class="mt-2 size-7 rounded-full border-2 border-white shadow-sm dark:border-slate-800" style="background-color: {{ $paleta['secundario'] }}"></span>
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $paleta['nombre'] }}</span>
+                                    <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">Principal y secundario</span>
+                                </span>
+                                @if ($paletaSeleccionada === $id)
+                                    <svg viewBox="0 0 20 20" fill="currentColor" class="size-5 shrink-0 text-blue-700 dark:text-blue-300" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.2 7.26a1 1 0 0 1-1.42.004L3.29 9.208a1 1 0 1 1 1.42-1.408l4.09 4.126 6.49-6.642a1 1 0 0 1 1.414.006Z" clip-rule="evenodd"/></svg>
+                                @endif
+                            </button>
+                        @endforeach
                     </div>
+                    @error('paletaSeleccionada') <span class="mt-2 block text-xs font-medium text-red-600">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="border-t border-slate-100 pt-6 dark:border-slate-800">
@@ -46,7 +59,9 @@
                         <img src="{{ str_starts_with($logoActual, 'http') ? $logoActual : Storage::disk('public')->url($logoActual) }}" alt="Logotipo actual" class="mt-3 h-16 max-w-48 rounded border border-slate-200 bg-white object-contain p-2">
                     @endif
                 </div>
+                @endif
 
+                @if ($paso === 2)
                 <div class="border-t border-slate-100 pt-6 dark:border-slate-800">
                     <h2 class="text-lg font-semibold">Carga masiva de productos <span class="text-sm font-normal text-slate-500">(opcional)</span></h2>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Sube un CSV de hasta 5,000 filas. SKU existente se actualiza en este tenant; filas inválidas se reportan sin detener las demás.</p>
@@ -62,7 +77,9 @@
                         </div>
                     @endif
                 </div>
+                @endif
 
+                @if ($paso === 3)
                 <div class="border-t border-slate-100 pt-6 dark:border-slate-800">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
@@ -92,6 +109,21 @@
                             <button type="button" wire:click="revisarPago" class="ml-2 font-semibold underline">Revisar estado</button>
                             @if ($estadoPago)<span class="ml-2 text-xs">Estado reportado: {{ $estadoPago }}</span>@endif
                         </div>
+                    @endif
+                </div>
+                @endif
+
+                <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
+                    @if ($paso > 1)
+                        <button type="button" wire:click="regresarPaso" class="rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Anterior</button>
+                    @else
+                        <span></span>
+                    @endif
+                    @if ($paso < 3)
+                        <button type="button" wire:click="avanzar" wire:loading.attr="disabled" class="rounded-lg bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-60">
+                            <span wire:loading.remove wire:target="avanzar">{{ $paso === 1 ? 'Continuar' : 'Guardar y continuar' }}</span>
+                            <span wire:loading wire:target="avanzar">Guardando…</span>
+                        </button>
                     @endif
                 </div>
             </section>

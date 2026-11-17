@@ -7,6 +7,7 @@ use App\Models\SuscripcionTenant;
 use App\Services\ImportadorCatalogoTenantService;
 use App\Services\MercadoPagoSuscripcionService;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -15,6 +16,17 @@ use Throwable;
 class Onboarding extends Component
 {
     use WithFileUploads;
+
+    private const PALETAS = [
+        'azul' => ['nombre' => 'Azul', 'primario' => '#2563eb', 'secundario' => '#0f172a'],
+        'verde' => ['nombre' => 'Verde', 'primario' => '#047857', 'secundario' => '#064e3b'],
+        'violeta' => ['nombre' => 'Violeta', 'primario' => '#7c3aed', 'secundario' => '#312e81'],
+        'naranja' => ['nombre' => 'Naranja', 'primario' => '#c2410c', 'secundario' => '#7c2d12'],
+    ];
+
+    public int $paso = 1;
+
+    public ?string $paletaSeleccionada = 'azul';
 
     public string $colorPrimario = '#2563eb';
 
@@ -32,6 +44,50 @@ class Onboarding extends Component
 
     public ?string $errorPago = null;
 
+    public function avanzar(ImportadorCatalogoTenantService $importador): void
+    {
+        if ($this->paso === 1) {
+            $this->validate([
+                'paletaSeleccionada' => ['required', Rule::in(array_keys(self::PALETAS))],
+                'logo' => ['nullable', 'image', 'max:3072'],
+            ]);
+
+            $this->aplicarPaletaSeleccionada();
+
+            $this->paso = 2;
+            return;
+        }
+
+        if ($this->paso === 2) {
+            $this->guardarPersonalizacion($importador);
+            $this->paso = 3;
+        }
+    }
+
+    public function regresarPaso(): void
+    {
+        $this->paso = max(1, $this->paso - 1);
+    }
+
+    public function seleccionarPaleta(string $paleta): void
+    {
+        if (! array_key_exists($paleta, self::PALETAS)) {
+            $this->addError('paletaSeleccionada', 'Selecciona una de las cuatro paletas disponibles.');
+            return;
+        }
+
+        $this->paletaSeleccionada = $paleta;
+        $this->aplicarPaletaSeleccionada();
+        $this->resetValidation('paletaSeleccionada');
+    }
+
+    private function aplicarPaletaSeleccionada(): void
+    {
+        $paleta = self::PALETAS[$this->paletaSeleccionada];
+        $this->colorPrimario = $paleta['primario'];
+        $this->colorSecundario = $paleta['secundario'];
+    }
+
     public function mount(): void
     {
         $user = auth()->user();
@@ -42,6 +98,9 @@ class Onboarding extends Component
         );
         $this->colorPrimario = $configuracion->color_primario ?: $this->colorPrimario;
         $this->colorSecundario = $configuracion->color_secundario ?: $this->colorSecundario;
+        $seleccion = collect(self::PALETAS)
+            ->search(fn (array $paleta): bool => $paleta['primario'] === $this->colorPrimario && $paleta['secundario'] === $this->colorSecundario);
+        $this->paletaSeleccionada = $seleccion === false ? null : $seleccion;
         $this->logoActual = $configuracion->logotipo;
 
         $subscription = SuscripcionTenant::query()->where('tenant_id', $user->tenant_id)->latest('id')->first();
@@ -51,6 +110,7 @@ class Onboarding extends Component
     public function guardarPersonalizacion(ImportadorCatalogoTenantService $importador): void
     {
         $this->validate([
+            'paletaSeleccionada' => ['required', Rule::in(array_keys(self::PALETAS))],
             'colorPrimario' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'colorSecundario' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'logo' => ['nullable', 'image', 'max:3072'],
@@ -61,6 +121,8 @@ class Onboarding extends Component
             'logo.max' => 'El logotipo no puede superar 3 MB.',
             'archivoCsv.max' => 'El CSV no puede superar 10 MB.',
         ]);
+
+        $this->aplicarPaletaSeleccionada();
 
         $tenant = auth()->user()->tenant;
         $config = ConfiguracionTenant::query()->firstOrCreate(['tenant_id' => $tenant->getKey()]);
@@ -133,7 +195,11 @@ class Onboarding extends Component
         $tenant = auth()->user()->tenant()->with('suscripciones.plan')->firstOrFail();
         $suscripcion = $tenant->suscripciones->sortByDesc('id')->first();
 
-        return view('livewire.tenant.onboarding', compact('tenant', 'suscripcion'))
+        return view('livewire.tenant.onboarding', [
+            'tenant' => $tenant,
+            'suscripcion' => $suscripcion,
+            'paletas' => self::PALETAS,
+        ])
             ->layout('layouts.tenant-onboarding', ['title' => 'Configura tu espacio | MULTIVERSE']);
     }
 }

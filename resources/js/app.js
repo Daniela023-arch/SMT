@@ -34,6 +34,68 @@
         showPageLoader();
     }, true);
 
+    document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return;
+        const toggle = event.target.closest('[data-password-toggle]');
+        if (!toggle) return;
+
+        const input = document.getElementById(toggle.getAttribute('data-password-toggle'));
+        if (!(input instanceof HTMLInputElement)) return;
+
+        const showPassword = input.type === 'password';
+        input.type = showPassword ? 'text' : 'password';
+        toggle.setAttribute('aria-pressed', String(showPassword));
+        toggle.setAttribute('aria-label', showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        toggle.querySelector('[data-password-icon="show"]')?.classList.toggle('hidden', showPassword);
+        toggle.querySelector('[data-password-icon="hide"]')?.classList.toggle('hidden', !showPassword);
+        input.focus({ preventScroll: true });
+    });
+
+    function animateTenantGrowth() {
+        const line = document.querySelector('[data-tenant-growth-line]');
+        const area = document.querySelector('[data-tenant-growth-area]');
+        const points = [...document.querySelectorAll('[data-tenant-growth-point]')];
+        if (!line || !area || !points.length) return;
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            line.style.strokeDasharray = 'none';
+            area.style.opacity = '1';
+            points.forEach((point) => { point.style.opacity = '1'; });
+            return;
+        }
+
+        // Mantiene el trazo, el relleno y cada punto dentro del mismo recorrido visual.
+        const length = line.getTotalLength();
+        const duration = 1500;
+        line.style.strokeDasharray = `${length}`;
+        line.style.strokeDashoffset = `${length}`;
+        line.animate(
+            [{ opacity: 0, strokeDashoffset: length }, { opacity: 1, strokeDashoffset: 0 }],
+            { duration, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' },
+        );
+        area.animate(
+            [{ opacity: 0 }, { opacity: 1 }],
+            { duration, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' },
+        );
+        points.forEach((point, index) => {
+            const progress = points.length > 1 ? index / (points.length - 1) : 0.5;
+            point.animate(
+                [
+                    { opacity: 0, transform: 'translateY(5px) scale(.55)' },
+                    { opacity: 1, transform: 'translateY(0) scale(1)' },
+                ],
+                { duration: 360, delay: progress * (duration - 300), easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' },
+            );
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', animateTenantGrowth, { once: true });
+    } else {
+        requestAnimationFrame(animateTenantGrowth);
+    }
+    document.addEventListener('livewire:navigated', () => requestAnimationFrame(animateTenantGrowth));
+
     const activeScanners = new WeakMap();
     const formats = ['qr_code', 'ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf', 'data_matrix', 'pdf417', 'aztec'];
 

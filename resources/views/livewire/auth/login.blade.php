@@ -28,7 +28,7 @@
                 placeholder="nombre@ferreteria.mx"
             />
 
-            <div class="space-y-2">
+            <div class="relative space-y-2">
                 <label for="password" class="text-sm font-semibold text-slate-800">Contraseña</label>
                 <flux:input
                     name="password"
@@ -37,8 +37,23 @@
                     required
                     autocomplete="current-password"
                     placeholder="Ingresa tu contraseña"
-                    viewable
+                    class="pr-12"
                 />
+                <button
+                    type="button"
+                    data-password-toggle="password"
+                    aria-controls="password"
+                    aria-label="Mostrar contraseña"
+                    aria-pressed="false"
+                    class="absolute right-2 bottom-1.5 z-10 grid size-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                >
+                    <svg data-password-icon="show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/>
+                    </svg>
+                    <svg data-password-icon="hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="hidden size-5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m3 3 18 18M10.6 6.2A10.6 10.6 0 0 1 12 6c6.1 0 9.5 6 9.5 6a15.3 15.3 0 0 1-3.2 3.8M6.2 6.2C3.8 7.7 2.5 12 2.5 12s3.4 6 9.5 6c1 0 1.9-.2 2.8-.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
+                    </svg>
+                </button>
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-3">
