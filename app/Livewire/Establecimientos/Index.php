@@ -153,7 +153,7 @@ class Index extends Component
         $assignedWarehouse = DB::table('usuario_almacen')->where('tenant_id', $tenantId)
             ->where('usuario_id', $user->getKey())->where('almacen_id', $almacen->getKey())->exists();
         $isWarehouseOperator = $user->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists();
-        abort_unless($admin || ($gerente && $assigned) || ($isWarehouseOperator && $assignedWarehouse), 404);
+        abort_unless($admin || ($gerente && $user->puede_ver_almacen && $assigned) || ($isWarehouseOperator && $assignedWarehouse), 404);
     }
 
     private function autorizarAdminOGerenteEnSucursal(int $establecimientoId): void
@@ -164,7 +164,7 @@ class Index extends Component
         $gerente = $user->roles()->where('roles.slug', 'gerente')->wherePivot('tenant_id', $tenantId)->exists();
         $assigned = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)
             ->where('usuario_id', $user->getKey())->where('establecimiento_id', $establecimientoId)->exists();
-        abort_unless($admin || ($gerente && $assigned), 403);
+        abort_unless($admin || ($gerente && $user->puede_ver_almacen && $assigned), 403);
     }
 
     public function render()
@@ -172,7 +172,10 @@ class Index extends Component
         $tenantId = (int) auth()->user()->tenant_id;
         $user = auth()->user();
         $isAdmin = $user->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists();
+        $isManager = $user->roles()->where('roles.slug', 'gerente')->wherePivot('tenant_id', $tenantId)->exists();
         $isWarehouseOperator = $user->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists();
+        $puedeVerAlmacen = $isAdmin || ! $isManager || (bool) $user->puede_ver_almacen;
+        $puedeVerPuntoVenta = $isAdmin || ! $isManager || (bool) $user->puede_ver_punto_venta;
         $query = Establecimiento::query()->where('tenant_id', $tenantId)
             ->with(['almacenes' => function ($warehouses) use ($user, $tenantId, $isWarehouseOperator, $isAdmin): void {
                 $warehouses->with('ubicaciones');
@@ -186,6 +189,8 @@ class Index extends Component
 
         return view('livewire.establecimientos.index', [
             'establecimientos' => $query->get(),
+            'puedeVerAlmacen' => $puedeVerAlmacen,
+            'puedeVerPuntoVenta' => $puedeVerPuntoVenta,
         ])->layout('layouts.app');
     }
 }

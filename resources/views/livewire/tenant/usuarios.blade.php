@@ -53,6 +53,15 @@
                 </flux:select>
                 @error('rol') <p class="-mt-4 text-xs text-rose-600">{{ $message }}</p> @enderror
 
+                @if ($rol === 'gerente' && $esAdmin)
+                    <fieldset class="space-y-3 rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900 dark:bg-blue-950/30">
+                        <legend class="px-1 text-sm font-semibold text-slate-900 dark:text-white">Accesos operativos del gerente</legend>
+                        <p class="text-xs text-slate-600 dark:text-slate-300">El gerente solo verá los módulos seleccionados, dentro de sus sucursales asignadas.</p>
+                        <label class="flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3 text-sm dark:bg-slate-900"><input type="checkbox" wire:model="puedeVerPuntoVenta" class="mt-0.5 rounded border-slate-300 text-blue-700 focus:ring-blue-600"><span><span class="block font-semibold text-slate-900 dark:text-white">Punto de venta</span><span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Puede abrir cajas y gestionar ventas en sus sucursales.</span></span></label>
+                        <label class="flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3 text-sm dark:bg-slate-900"><input type="checkbox" wire:model="puedeVerAlmacen" class="mt-0.5 rounded border-slate-300 text-blue-700 focus:ring-blue-600"><span><span class="block font-semibold text-slate-900 dark:text-white">Almacén e inventario</span><span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Puede consultar y operar los almacenes de sus sucursales.</span></span></label>
+                    </fieldset>
+                @endif
+
                 @if ($rol !== 'ventas')
                 <fieldset class="space-y-2">
                     <legend class="text-sm font-medium text-slate-800 dark:text-slate-200">Sucursales permitidas</legend>
@@ -130,6 +139,7 @@
                             <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                                 <span>Sucursales: {{ $usuario->establecimientos->pluck('nombre')->join(', ') ?: 'Sin asignación' }}</span>
                                 @if (in_array($rolUsuario, ['almacen', 'ventas'], true))<span>{{ $rolUsuario === 'ventas' ? 'Punto de venta' : 'Almacenes' }}: {{ $usuario->almacenesAsignados->pluck('nombre')->join(', ') ?: 'Sin asignación' }}</span>@endif
+                                @if ($rolUsuario === 'gerente')<span>Accesos: {{ $usuario->puede_ver_punto_venta ? 'Punto de venta' : '' }}{{ $usuario->puede_ver_punto_venta && $usuario->puede_ver_almacen ? ' · ' : '' }}{{ $usuario->puede_ver_almacen ? 'Almacén e inventario' : '' }}{{ ! $usuario->puede_ver_punto_venta && ! $usuario->puede_ver_almacen ? 'Sin acceso a punto de venta ni almacén' : '' }}</span>@endif
                             </div>
                             @if ($rolUsuario !== 'admin')
                                 <div class="flex flex-wrap gap-2">

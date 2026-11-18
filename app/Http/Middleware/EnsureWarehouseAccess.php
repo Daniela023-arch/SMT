@@ -59,6 +59,17 @@ class EnsureWarehouseAccess
             ->where('r.tenant_id', $tenantId)
             ->pluck('r.slug');
 
+        $user = $request->user();
+        if ($roles->contains('gerente')) {
+            if ($request->routeIs('ventas.index') && ! $user->puede_ver_punto_venta) {
+                abort(Response::HTTP_NOT_FOUND);
+            }
+
+            if ($request->routeIs('inventario.show') && ! $user->puede_ver_almacen) {
+                abort(Response::HTTP_NOT_FOUND);
+            }
+        }
+
         $isAssignedToBranch = DB::table('usuario_establecimiento')
             ->where('tenant_id', $tenantId)
             ->where('usuario_id', $userId)

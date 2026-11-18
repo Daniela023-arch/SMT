@@ -1,19 +1,17 @@
 (() => {
-    // Indicador global para navegaciones Livewire y enlaces internos de página completa.
+    // Indicador global para peticiones, cargas, navegaciones y formularios.
     const loader = () => document.getElementById('multiverse-page-loader');
     let loaderTimer;
+    let pendingWaits = 0;
 
-    function showPageLoader() {
-        clearTimeout(loaderTimer);
-        loaderTimer = setTimeout(() => {
-            const element = loader();
-            if (!element) return;
-            element.classList.add('is-visible');
-            element.setAttribute('aria-hidden', 'false');
-        }, 140);
+    function revealPageLoader() {
+        const element = loader();
+        if (!element) return;
+        element.classList.add('is-visible');
+        element.setAttribute('aria-hidden', 'false');
     }
 
-    function hidePageLoader() {
+    function concealPageLoader() {
         clearTimeout(loaderTimer);
         const element = loader();
         if (!element) return;
@@ -21,17 +19,71 @@
         element.setAttribute('aria-hidden', 'true');
     }
 
-    document.addEventListener('livewire:navigate', showPageLoader);
-    document.addEventListener('livewire:navigated', hidePageLoader);
-    window.addEventListener('pageshow', hidePageLoader);
+    function beginPageWait() {
+        pendingWaits += 1;
+        if (pendingWaits !== 1) return;
+
+        clearTimeout(loaderTimer);
+        loaderTimer = setTimeout(() => {
+            if (pendingWaits > 0) revealPageLoader();
+        }, 140);
+    }
+
+    function finishPageWait() {
+        pendingWaits = Math.max(0, pendingWaits - 1);
+        if (pendingWaits === 0) concealPageLoader();
+    }
+
+    function resetPageWaits() {
+        pendingWaits = 0;
+        concealPageLoader();
+    }
+
+    function installLivewireLoaderHook() {
+        if (!window.Livewire || window.__multiverseLoaderHookInstalled) return;
+        window.__multiverseLoaderHookInstalled = true;
+
+        window.Livewire.hook('request', ({ succeed, fail }) => {
+            beginPageWait();
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
+                finishPageWait();
+            };
+            succeed(finish);
+            fail(finish);
+        });
+    }
+
+    document.addEventListener('livewire:init', installLivewireLoaderHook);
+    installLivewireLoaderHook();
+    document.addEventListener('livewire:navigate', beginPageWait);
+    document.addEventListener('livewire:navigated', finishPageWait);
+    window.addEventListener('pageshow', resetPageWaits);
+
+    for (const eventName of ['livewire-upload-start']) {
+        document.addEventListener(eventName, beginPageWait, true);
+    }
+    for (const eventName of ['livewire-upload-finish', 'livewire-upload-error', 'livewire-upload-cancel']) {
+        document.addEventListener(eventName, finishPageWait, true);
+    }
+
     document.addEventListener('click', (event) => {
         if (!(event.target instanceof Element) || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         const link = event.target.closest('a[href]');
-        if (!link || link.target === '_blank' || link.hasAttribute('download') || link.hasAttribute('data-no-page-loader')) return;
+        if (!link || link.hasAttribute('wire:navigate') || link.target === '_blank' || link.hasAttribute('download') || link.hasAttribute('data-no-page-loader')) return;
 
         const destination = new URL(link.href, window.location.href);
         if (destination.origin !== window.location.origin || destination.href === window.location.href || (destination.pathname === window.location.pathname && destination.search === window.location.search && destination.hash)) return;
-        showPageLoader();
+        beginPageWait();
+    }, true);
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || event.defaultPrevented) return;
+        if ([...form.attributes].some(({ name }) => name.startsWith('wire:submit'))) return;
+        beginPageWait();
     }, true);
 
     document.addEventListener('click', (event) => {

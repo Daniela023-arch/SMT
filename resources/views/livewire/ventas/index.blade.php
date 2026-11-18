@@ -6,6 +6,7 @@
         })->filter(fn ($linea) => $linea['producto'] !== null);
         $totalCarrito = $carrito->sum(fn ($linea) => (float) $linea['producto']->precio_venta * $linea['cantidad']);
         $esPersonalVentas = auth()->user()->roles()->where('roles.slug', 'ventas')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists();
+        $puedeGestionarVentas = auth()->user()->roles()->whereIn('roles.slug', ['admin', 'gerente'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists();
     @endphp
 
     <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -105,6 +106,9 @@
                                         </label>
                                     @endif
                                 </div>
+                                <button type="button" wire:click="prepararQuitarLinea({{ $articulo['indice'] }})" class="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-900 dark:hover:bg-rose-950/40 dark:hover:text-rose-300" aria-label="Quitar {{ $productoAgregado->nombre }} del carrito">
+                                    <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>
+                                </button>
                             </article>
                         @endforeach
                     </div>
@@ -155,11 +159,29 @@
         </aside>
     </section>
 
+    @if ($mostrarAutorizacionRetiro)
+        @php($productoPendienteRetiro = $productos->firstWhere('id', $productoRetiroId))
+        <div class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" wire:keydown.escape="cancelarAutorizacionRetiro" wire:click.self="cancelarAutorizacionRetiro" role="dialog" aria-modal="true" aria-labelledby="autorizacion-retiro-title">
+            <form wire:submit="autorizarYQuitarLinea" class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:p-6">
+                <div class="flex items-start gap-3"><span class="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200"><svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 4v3"/></svg></span><div><h2 id="autorizacion-retiro-title" class="font-bold text-slate-950 dark:text-white">Autorización de gerencia</h2><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">El gerente o administrador debe estar presente e ingresar sus credenciales para quitar el producto del carrito.</p></div></div>
+                <div class="mt-4 rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-950"><p class="font-semibold text-slate-900 dark:text-white">{{ $productoPendienteRetiro?->nombre ?? 'Producto no disponible' }}</p><p class="mt-0.5 text-slate-600 dark:text-slate-300">{{ $productoPendienteRetiro?->sku }} · Cantidad {{ number_format($cantidadRetiro, 3) }} · ${{ number_format((float) ($productoPendienteRetiro?->precio_venta ?? 0) * $cantidadRetiro, 2) }}</p></div>
+                <label class="mt-5 block text-sm font-medium text-slate-800 dark:text-slate-100">Correo del gerente o administrador<input wire:model="correoGerente" type="email" autocomplete="username" required class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></label>
+                <label class="mt-3 block text-sm font-medium text-slate-800 dark:text-slate-100">Contraseña<input wire:model="contrasenaGerente" type="password" autocomplete="new-password" required class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></label>
+                @error('contrasenaGerente')<p class="mt-1 text-xs font-medium text-rose-700 dark:text-rose-300">{{ $message }}</p>@enderror
+                @error('lineaRetiroIndice')<p class="mt-1 text-xs font-medium text-rose-700 dark:text-rose-300">{{ $message }}</p>@enderror
+                <label class="mt-3 block text-sm font-medium text-slate-800 dark:text-slate-100">Motivo<textarea wire:model="motivoRetiroLinea" rows="2" required minlength="5" maxlength="500" placeholder="Ej. Se escaneó por error" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"></textarea></label>
+                @error('motivoRetiroLinea')<p class="mt-1 text-xs font-medium text-rose-700 dark:text-rose-300">{{ $message }}</p>@enderror
+                <div class="mt-5 flex justify-end gap-2"><button type="button" wire:click="cancelarAutorizacionRetiro" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Cancelar</button><button type="submit" wire:loading.attr="disabled" wire:target="autorizarYQuitarLinea" class="rounded-lg bg-rose-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-800 disabled:opacity-60">Autorizar y quitar</button></div>
+            </form>
+        </div>
+    @endif
+
     @if ($mostrarOperaciones)
     <div class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" wire:keydown.escape="$set('mostrarOperaciones', false)" wire:click.self="$set('mostrarOperaciones', false)" role="dialog" aria-modal="true" aria-labelledby="operaciones-title">
     <section class="max-h-[92vh] w-full max-w-5xl space-y-4 overflow-y-auto rounded-2xl bg-slate-50 p-4 shadow-2xl dark:bg-slate-950 sm:p-6">
-        <div class="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><div><p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Operación</p><h2 id="operaciones-title" class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Ventas y confirmaciones</h2><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Consulta ventas recientes y confirma borradores.</p></div><button type="button" wire:click="$set('mostrarOperaciones', false)" class="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" aria-label="Cerrar ventana">✕</button></div>
-        <div class="flex flex-wrap items-end justify-between gap-3"><div><p class="text-sm font-semibold text-blue-700 dark:text-blue-300">Operación</p><h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Ventas recientes</h2><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Confirma borradores y registra los pagos de ventas confirmadas.</p></div><span class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">{{ $ventas->total() }} registros</span></div>
+        <div class="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><div><p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Operación</p><h2 id="operaciones-title" class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Ventas y confirmaciones</h2><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ $puedeGestionarVentas ? 'Consulta ventas, confirma borradores y registra pagos.' : 'Consulta la información de ventas de este punto de venta.' }}</p></div><button type="button" wire:click="$set('mostrarOperaciones', false)" class="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" aria-label="Cerrar ventana">✕</button></div>
+
+        <div class="flex flex-wrap items-end justify-between gap-3"><div><p class="text-sm font-semibold text-blue-700 dark:text-blue-300">Operación</p><h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">Ventas recientes</h2><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ $puedeGestionarVentas ? 'Confirma borradores y registra los pagos de ventas confirmadas.' : 'Consulta folios, productos, importes y estado de las ventas.' }}</p></div><span class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">{{ $ventas->total() }} registros</span></div>
         @forelse($ventas as $venta)
             @php($pagado = (float) $venta->pagos->where('estado', 'pagado')->sum('monto'))
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
@@ -168,9 +190,9 @@
                     <div class="text-left sm:text-right"><p class="text-xl font-bold text-slate-950 dark:text-white">${{ number_format((float) $venta->total, 2) }} <span class="text-xs font-medium">MXN</span></p><p class="text-xs text-slate-600 dark:text-slate-300">Pagado ${{ number_format($pagado, 2) }}</p></div>
                 </div>
                 <div class="mt-4 grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:grid-cols-2 lg:grid-cols-3">@foreach($venta->detallesVenta as $detalle)<div class="flex justify-between gap-3 text-sm"><span class="min-w-0 truncate text-slate-700 dark:text-slate-200">{{ number_format((float) $detalle->cantidad, 3) }} × {{ $detalle->producto?->nombre ?? 'Producto eliminado' }}</span><span class="shrink-0 font-medium text-slate-900 dark:text-white">${{ number_format((float) $detalle->total, 2) }}</span></div>@endforeach</div>
-                @if($venta->estado === 'borrador')
+                @if($venta->estado === 'borrador' && $puedeGestionarVentas)
                     <div class="mt-4 flex justify-end"><button type="button" wire:click="confirmar({{ $venta->id }})" wire:confirm="¿Confirmas la venta y el descuento de las existencias?" class="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">Confirmar y descontar stock</button></div>
-                @elseif($venta->estado === 'confirmada')
+                @elseif($venta->estado === 'confirmada' && $puedeGestionarVentas)
                     <div class="mt-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-950">
                         <p class="mb-3 text-sm font-semibold text-slate-900 dark:text-white">Registrar pago</p>
                         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -56,6 +56,8 @@ class UsuarioTenantService
         abort_unless($this->puedeAdministrarPersonal($actor), 403);
         $tenantId = (int) $actor->tenant_id;
         $roleSlug = (string) $datos['rol'];
+        $puedeVerPuntoVenta = $roleSlug === 'gerente' ? (bool) ($datos['puede_ver_punto_venta'] ?? true) : true;
+        $puedeVerAlmacen = $roleSlug === 'gerente' ? (bool) ($datos['puede_ver_almacen'] ?? true) : true;
         $branches = array_values(array_unique(array_map('intval', $datos['establecimientos'] ?? [])));
         $warehouseIds = array_values(array_unique(array_map('intval', $datos['almacenes'] ?? [])));
 
@@ -138,7 +140,7 @@ class UsuarioTenantService
             throw ValidationException::withMessages(['rol' => 'El rol seleccionado aún no está configurado para este tenant. Ejecuta los seeders de roles y vuelve a intentarlo.']);
         }
 
-        return DB::transaction(function () use ($actor, $datos, $usuarioId, $tenantId, $role, $roleSlug, $branches, $warehouseIds): array {
+        return DB::transaction(function () use ($actor, $datos, $usuarioId, $tenantId, $role, $roleSlug, $branches, $warehouseIds, $puedeVerPuntoVenta, $puedeVerAlmacen): array {
             $target = $usuarioId === null
                 ? new User
                 : User::query()->where('tenant_id', $tenantId)->lockForUpdate()->findOrFail($usuarioId);
@@ -156,6 +158,8 @@ class UsuarioTenantService
                 'email' => Str::lower($datos['email']),
                 'activo' => (bool) ($datos['activo'] ?? true),
                 'tenant_id' => $tenantId,
+                'puede_ver_punto_venta' => $puedeVerPuntoVenta,
+                'puede_ver_almacen' => $puedeVerAlmacen,
             ]);
             if (! $target->exists) {
                 $target->forceFill(['password' => Str::random(48), 'email_verified_at' => now()]);
@@ -307,6 +311,8 @@ class UsuarioTenantService
             'email' => $user->email,
             'activo' => (bool) $user->activo,
             'rol' => $user->roles->first()?->slug,
+            'puede_ver_punto_venta' => (bool) $user->puede_ver_punto_venta,
+            'puede_ver_almacen' => (bool) $user->puede_ver_almacen,
             'establecimientos' => $user->establecimientos->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
             'almacenes' => $user->almacenesAsignados->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
         ];

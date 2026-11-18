@@ -2,6 +2,8 @@
     @php
         $esAdmin = auth()->user()->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists();
         $esGerente = auth()->user()->roles()->where('roles.slug', 'gerente')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists();
+        $puedeVerAlmacen = $esAdmin || ! $esGerente || auth()->user()->puede_ver_almacen;
+        $puedeVerPuntoVenta = $esAdmin || ! $esGerente || auth()->user()->puede_ver_punto_venta;
         $totalAlmacenes = $establecimientos->sum(fn ($establecimiento) => $establecimiento->almacenes->count());
     @endphp
 
@@ -9,15 +11,15 @@
         <div>
             <p class="text-sm font-semibold text-blue-700 dark:text-blue-300">Organización</p>
             <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">Sucursales y almacenes</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">Elige una ubicación para consultar existencias o abrir la caja de ventas.</p>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">Elige una ubicación para {{ $puedeVerAlmacen && $puedeVerPuntoVenta ? 'consultar existencias o abrir la caja de ventas' : ($puedeVerAlmacen ? 'consultar existencias' : 'abrir la caja de ventas') }}.</p>
         </div>
         <div class="grid grid-cols-2 gap-3 sm:min-w-64">
             <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"><p class="text-xs font-medium text-slate-600 dark:text-slate-300">Establecimientos</p><p class="mt-1 text-xl font-bold text-slate-950 dark:text-white">{{ $establecimientos->count() }}</p></div>
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"><p class="text-xs font-medium text-slate-600 dark:text-slate-300">Almacenes</p><p class="mt-1 text-xl font-bold text-slate-950 dark:text-white">{{ $totalAlmacenes }}</p></div>
+            @if($puedeVerAlmacen)<div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"><p class="text-xs font-medium text-slate-600 dark:text-slate-300">Almacenes</p><p class="mt-1 text-xl font-bold text-slate-950 dark:text-white">{{ $totalAlmacenes }}</p></div>@endif
         </div>
     </header>
 
-    @if($esAdmin || $esGerente)
+    @if($esAdmin || ($esGerente && $puedeVerAlmacen))
         <section class="grid gap-4 xl:grid-cols-2">
             @if($esAdmin)
             <form wire:submit="crear" class="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
@@ -55,7 +57,7 @@
     @endif
 
     <section class="space-y-4">
-        <div><h2 class="text-lg font-bold text-slate-950 dark:text-white">Estructura de la empresa</h2><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Accesos rápidos al inventario y punto de venta de cada almacén.</p></div>
+        <div><h2 class="text-lg font-bold text-slate-950 dark:text-white">Estructura de la empresa</h2><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Accesos rápidos a {{ $puedeVerAlmacen && $puedeVerPuntoVenta ? 'inventario y punto de venta' : ($puedeVerAlmacen ? 'inventario' : 'punto de venta') }}.</p></div>
         @forelse($establecimientos as $establecimiento)
             <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
                 <div class="flex flex-col justify-between gap-4 border-b border-slate-100 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/60 sm:flex-row sm:items-center sm:px-6">
@@ -74,10 +76,10 @@
                                 <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h4 class="font-semibold text-slate-900 dark:text-white">{{ $almacen->nombre }}</h4><span class="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ $almacen->codigo }}</span></div><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ $almacen->ubicaciones->pluck('nombre')->join(' · ') ?: 'Ubicación principal' }}</p><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $almacen->ubicaciones->count() }} {{ $almacen->ubicaciones->count() === 1 ? 'ubicación' : 'ubicaciones' }}</p></div>
                             </div>
                             <div class="flex shrink-0 flex-wrap gap-2 pl-[52px] sm:pl-0">
-                                <a wire:navigate href="{{ route('inventario.show', [$establecimiento->id, $almacen->id]) }}" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-emerald-50 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:bg-emerald-950/50 dark:hover:text-blue-100">
+                                @if($puedeVerAlmacen && ($esAdmin || $esGerente || auth()->user()->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists()))<a wire:navigate href="{{ route('inventario.show', [$establecimiento->id, $almacen->id]) }}" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-emerald-50 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-700 dark:hover:bg-emerald-950/50 dark:hover:text-blue-100">
                                     <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15v-4h3v4m2 0V7h3v8m2 0v-2h3v2"/></svg> Inventario
-                                </a>
-                                @if(auth()->user()->roles()->whereIn('roles.slug', ['admin', 'gerente', 'ventas'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
+                                </a>@endif
+                                @if($puedeVerPuntoVenta && auth()->user()->roles()->whereIn('roles.slug', ['admin', 'gerente', 'ventas'])->wherePivot('tenant_id', auth()->user()->tenant_id)->exists())
                                     <a wire:navigate href="{{ route('ventas.index', [$establecimiento->id, $almacen->id]) }}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
                                         <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg> Abrir punto de venta
                                     </a>

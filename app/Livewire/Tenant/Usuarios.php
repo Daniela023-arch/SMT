@@ -34,6 +34,10 @@ class Usuarios extends Component
 
     public bool $activo = true;
 
+    public bool $puedeVerPuntoVenta = true;
+
+    public bool $puedeVerAlmacen = true;
+
     public bool $personalHabilitado = true;
 
     public ?string $enlaceInicial = null;
@@ -56,6 +60,10 @@ class Usuarios extends Component
     {
         $this->almacenes = [];
         $this->almacenVentaId = '';
+        if ($this->rol !== 'gerente') {
+            $this->puedeVerPuntoVenta = true;
+            $this->puedeVerAlmacen = true;
+        }
         $this->resetValidation('rol', 'almacenes');
     }
 
@@ -75,6 +83,8 @@ class Usuarios extends Component
         $this->email = $usuario->email;
         $this->rol = $usuario->roles->first()?->slug ?? 'ventas';
         $this->activo = (bool) $usuario->activo;
+        $this->puedeVerPuntoVenta = (bool) $usuario->puede_ver_punto_venta;
+        $this->puedeVerAlmacen = (bool) $usuario->puede_ver_almacen;
         $this->establecimientos = $usuario->establecimientos->pluck('id')->map(fn ($id) => (string) $id)->all();
         $this->almacenes = $usuario->almacenesAsignados->pluck('id')->map(fn ($id) => (string) $id)->all();
         $this->almacenVentaId = $this->rol === 'ventas' ? (string) ($this->almacenes[0] ?? '') : '';
@@ -97,8 +107,12 @@ class Usuarios extends Component
             'almacenes.*' => ['integer', 'distinct', 'exists:almacenes,id'],
             'almacenVentaId' => ['required_if:rol,ventas', 'nullable', 'integer', 'exists:almacenes,id'],
             'activo' => ['required', 'boolean'],
+            'puedeVerPuntoVenta' => ['required_if:rol,gerente', 'boolean'],
+            'puedeVerAlmacen' => ['required_if:rol,gerente', 'boolean'],
         ]);
         $datos['almacenes'] = $this->rol === 'ventas' ? [(int) $datos['almacenVentaId']] : $datos['almacenes'];
+        $datos['puede_ver_punto_venta'] = (bool) ($datos['puedeVerPuntoVenta'] ?? true);
+        $datos['puede_ver_almacen'] = (bool) ($datos['puedeVerAlmacen'] ?? true);
 
         $editando = $this->usuarioSeleccionado !== null;
         $resultado = $service->guardar(auth()->user(), $datos, $this->usuarioSeleccionado);
@@ -156,6 +170,8 @@ class Usuarios extends Component
         $this->reset('usuarioSeleccionado', 'usuarioEnlaceId', 'nombre', 'email', 'establecimientos', 'almacenes', 'almacenVentaId', 'enlaceInicial', 'enlaceRestablecimiento', 'emailEnlace');
         $this->rol = 'ventas';
         $this->activo = true;
+        $this->puedeVerPuntoVenta = true;
+        $this->puedeVerAlmacen = true;
         $this->mostrarFormulario = false;
         $this->resetValidation();
     }

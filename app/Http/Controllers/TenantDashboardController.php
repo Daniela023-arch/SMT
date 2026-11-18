@@ -34,6 +34,8 @@ class TenantDashboardController
         $esAdmin = in_array('admin', $rolesTenant, true);
         $esGerente = in_array('gerente', $rolesTenant, true);
         $esAlmacen = in_array('almacen', $rolesTenant, true);
+        $puedeVerPuntoVenta = ! $esGerente || (bool) $usuario->puede_ver_punto_venta;
+        $puedeVerAlmacen = ! $esGerente || (bool) $usuario->puede_ver_almacen;
         if (in_array('ventas', $rolesTenant, true)) {
             $puntoVenta = DB::table('usuario_almacen')->join('almacenes', 'almacenes.id', '=', 'usuario_almacen.almacen_id')
                 ->join('establecimientos', 'establecimientos.id', '=', 'almacenes.establecimiento_id')
@@ -73,17 +75,23 @@ class TenantDashboardController
         $personalGerenteTotal = $equipoGerente->count();
         $equipoGerente = $equipoGerente->take(8)->values();
         $productos = Producto::query()->where('tenant_id', $tenantId)->where('activo', true);
-        $ventasHoy = Venta::query()->where('tenant_id', $tenantId)
-            ->where('estado', 'confirmada')->whereDate('created_at', today());
-        if (! $esAdmin) {
-            if ($esAlmacen) {
-                $ventasHoy->whereIn('almacen_id', $almacenIds);
-            } else {
-                $ventasHoy->whereIn('establecimiento_id', $establecimientoIds);
+        $ventasHoyCantidad = 0;
+        $ventasHoyTotal = 0.0;
+        if ($puedeVerPuntoVenta) {
+            $ventasHoy = Venta::query()->where('tenant_id', $tenantId)
+                ->where('estado', 'confirmada')->whereDate('created_at', today());
+            if (! $esAdmin) {
+                if ($esAlmacen) {
+                    $ventasHoy->whereIn('almacen_id', $almacenIds);
+                } else {
+                    $ventasHoy->whereIn('establecimiento_id', $establecimientoIds);
+                }
             }
+            $ventasHoyCantidad = (clone $ventasHoy)->count();
+            $ventasHoyTotal = (float) (clone $ventasHoy)->sum('total');
         }
 
-        $productosBajoStock = Producto::query()
+        $productosBajoStock = $puedeVerAlmacen ? Producto::query()
             ->leftJoin('existencias', function ($join) use ($tenantId, $esAdmin, $esAlmacen, $almacenIds, $establecimientoIds): void {
                 $join->on('existencias.producto_id', '=', 'productos.id')
                     ->where('existencias.tenant_id', '=', $tenantId);
@@ -98,9 +106,9 @@ class TenantDashboardController
             ->havingRaw('COALESCE(SUM(existencias.cantidad), 0) <= productos.stock_minimo')
             ->orderBy('productos.nombre')
             ->limit(6)
-            ->get();
+            ->get() : collect();
 
-        $movimientos = StockMovimiento::query()
+        $movimientos = $puedeVerAlmacen ? StockMovimiento::query()
             ->with(['producto:id,nombre,sku', 'usuario:id,name'])
             ->where('tenant_id', $tenantId)
             ->where(function ($query) use ($esAdmin, $esAlmacen, $almacenIds, $establecimientoIds, $tenantId): void {
@@ -112,21 +120,23 @@ class TenantDashboardController
             })
             ->latest()
             ->limit(6)
-            ->get();
+            ->get() : collect();
 
         return view($esGerente ? 'dashboard-gerente' : 'dashboard', [
             'tenant' => $tenant,
             'esAdmin' => $esAdmin,
             'esGerente' => $esGerente,
             'esAlmacen' => $esAlmacen,
+            'puedeVerPuntoVenta' => $puedeVerPuntoVenta,
+            'puedeVerAlmacen' => $puedeVerAlmacen,
             'personalActivo' => $personalActivo,
             'equipoGerente' => $equipoGerente,
             'personalGerenteTotal' => $personalGerenteTotal,
             'sucursalesEnAlcance' => $sucursalesEnAlcance,
             'almacenesOperativos' => $almacenes,
             'totalProductos' => $productos->count(),
-            'ventasHoyCantidad' => (clone $ventasHoy)->count(),
-            'ventasHoyTotal' => (float) (clone $ventasHoy)->sum('total'),
+            'ventasHoyCantidad' => $ventasHoyCantidad,
+            'ventasHoyTotal' => $ventasHoyTotal,
             'productosBajoStock' => $productosBajoStock,
             'movimientos' => $movimientos,
         ]);

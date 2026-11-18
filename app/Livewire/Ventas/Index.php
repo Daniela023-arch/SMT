@@ -9,11 +9,15 @@ use App\Models\Existencia;
 use App\Models\Lote;
 use App\Models\Producto;
 use App\Models\UnidadInventario;
+use App\Models\User;
 use App\Models\Venta;
 use App\Services\PagoVentaService;
 use App\Services\VentaService;
+use App\Services\AuditoriaService;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -55,6 +59,23 @@ class Index extends Component
     public ?array $ventaCompletada = null;
 
     public bool $mostrarOperaciones = false;
+
+    public bool $mostrarAutorizacionRetiro = false;
+
+    #[Locked]
+    public int $lineaRetiroIndice = -1;
+
+    #[Locked]
+    public int $productoRetiroId = 0;
+
+    #[Locked]
+    public float $cantidadRetiro = 0;
+
+    public string $correoGerente = '';
+
+    public string $contrasenaGerente = '';
+
+    public string $motivoRetiroLinea = '';
 
     public function mount(int $establecimiento, int $almacen): void
     {
@@ -164,12 +185,113 @@ class Index extends Component
         Flux::toast(variant: 'success', text: 'Código guardado y producto agregado al carrito.');
     }
 
-    public function quitarLinea(int $indice): void
+    public function prepararQuitarLinea(int $indice): void
     {
+        $this->autorizarVentas();
+
         if (! array_key_exists($indice, $this->lineas)) {
             return;
         }
 
+        if (! $this->esEncargadoVentas()) {
+            $this->eliminarLineaCarrito($indice);
+            return;
+        }
+
+        $this->resetValidation(['correoGerente', 'contrasenaGerente', 'motivoRetiroLinea']);
+        $this->lineaRetiroIndice = $indice;
+        $this->productoRetiroId = (int) ($this->lineas[$indice]['producto_id'] ?? 0);
+        $this->cantidadRetiro = (float) ($this->lineas[$indice]['cantidad'] ?? 0);
+        $this->mostrarAutorizacionRetiro = true;
+    }
+
+    public function autorizarYQuitarLinea(AuditoriaService $auditoria): void
+    {
+        $correo = mb_strtolower(trim($this->correoGerente));
+        $contrasena = $this->contrasenaGerente;
+        $motivo = trim($this->motivoRetiroLinea);
+        // Nunca devolver la contraseña del gerente dentro del snapshot de Livewire.
+        $this->reset('contrasenaGerente');
+
+        $this->autorizarVentas();
+        abort_unless($this->esEncargadoVentas(), 403);
+
+        if ($this->lineaRetiroIndice < 0 || ! array_key_exists($this->lineaRetiroIndice, $this->lineas)) {
+            $this->addError('lineaRetiroIndice', 'La línea del carrito ya no está disponible.');
+            return;
+        }
+
+        if ($correo === '' || $contrasena === '') {
+            $this->addError('contrasenaGerente', 'Ingresa el correo y la contraseña del gerente o administrador.');
+            return;
+        }
+
+        if (mb_strlen($motivo) < 5) {
+            $this->addError('motivoRetiroLinea', 'Describe brevemente por qué se debe quitar el producto.');
+            return;
+        }
+
+        $limiterKey = 'pos-manager-override:'.auth()->id().':'.$this->establecimiento;
+        if (RateLimiter::tooManyAttempts($limiterKey, 5)) {
+            $this->addError('contrasenaGerente', 'Se hicieron varios intentos. Espera un minuto e inténtalo de nuevo.');
+            return;
+        }
+
+        $tenantId = (int) auth()->user()->tenant_id;
+        $gerente = User::query()->where('tenant_id', $tenantId)->where('activo', true)
+            ->whereRaw('LOWER(email) = ?', [$correo])->first();
+        $rolesGerencia = $gerente?->roles()->whereIn('roles.slug', ['admin', 'gerente'])->wherePivot('tenant_id', $tenantId)->get() ?? collect();
+        $esAdminTenant = $rolesGerencia->contains('slug', 'admin');
+        $esGerenteAsignado = $rolesGerencia->contains('slug', 'gerente') && DB::table('usuario_establecimiento')
+            ->where('tenant_id', $tenantId)->where('usuario_id', $gerente?->getKey())
+            ->where('establecimiento_id', $this->establecimiento)->exists();
+
+        if ($gerente === null || (! $esAdminTenant && ! $esGerenteAsignado) || ! Hash::check($contrasena, $gerente->password)) {
+            RateLimiter::hit($limiterKey, 60);
+            $this->addError('contrasenaGerente', 'Las credenciales no corresponden a un gerente o administrador asignado a esta sucursal.');
+            return;
+        }
+
+        RateLimiter::clear($limiterKey);
+        $indice = $this->lineaRetiroIndice;
+        $linea = $this->lineas[$indice];
+        $producto = Producto::query()->where('tenant_id', $tenantId)->find($this->productoRetiroId);
+        if ($producto === null || (int) ($linea['producto_id'] ?? 0) !== $this->productoRetiroId || (float) ($linea['cantidad'] ?? 0) !== $this->cantidadRetiro) {
+            $this->addError('lineaRetiroIndice', 'El producto ya no está disponible.');
+            return;
+        }
+
+        $auditoria->registrar(
+            (int) auth()->id(),
+            'producto_quitado_caja_autorizado',
+            'CarritoVenta',
+            null,
+            $tenantId,
+            null,
+            [
+                'producto_id' => (int) $producto->getKey(),
+                'sku' => $producto->sku,
+                'nombre' => $producto->nombre,
+                'cantidad' => $this->cantidadRetiro,
+                'gerente_autorizador_id' => (int) $gerente->getKey(),
+                'motivo' => $motivo,
+            ],
+            $this->establecimiento,
+        );
+
+        $this->eliminarLineaCarrito($indice);
+        $this->reset('correoGerente', 'contrasenaGerente', 'motivoRetiroLinea', 'lineaRetiroIndice', 'productoRetiroId', 'cantidadRetiro', 'mostrarAutorizacionRetiro');
+        Flux::toast(variant: 'success', text: 'Producto quitado con autorización de gerencia.');
+    }
+
+    public function cancelarAutorizacionRetiro(): void
+    {
+        $this->reset('correoGerente', 'contrasenaGerente', 'motivoRetiroLinea', 'lineaRetiroIndice', 'productoRetiroId', 'cantidadRetiro', 'mostrarAutorizacionRetiro');
+        $this->resetValidation(['correoGerente', 'contrasenaGerente', 'motivoRetiroLinea', 'lineaRetiroIndice']);
+    }
+
+    private function eliminarLineaCarrito(int $indice): void
+    {
         unset($this->lineas[$indice]);
         $this->lineas = array_values($this->lineas);
 
@@ -309,7 +431,7 @@ class Index extends Component
 
     public function confirmar(int $ventaId, VentaService $service): void
     {
-        $this->autorizarVentas();
+        $this->autorizarGestionVentas();
         $venta = Venta::query()->where('tenant_id', auth()->user()->tenant_id)->where('establecimiento_id', $this->establecimiento)->where('almacen_id', $this->almacen)->findOrFail($ventaId);
         $service->confirmar($venta);
         $this->dispatch('barcode-ready');
@@ -318,7 +440,7 @@ class Index extends Component
 
     public function registrarPago(PagoVentaService $service): void
     {
-        $this->autorizarVentas();
+        $this->autorizarGestionVentas();
         $datos = $this->validate([
             'ventaPagoId' => ['required', 'integer', 'min:1'],
             'montoPago' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
@@ -334,6 +456,23 @@ class Index extends Component
         Flux::toast(variant: 'success', text: 'Pago registrado.');
     }
 
+    private function esEncargadoVentas(): bool
+    {
+        return auth()->user()->roles()->where('roles.slug', 'ventas')->wherePivot('tenant_id', auth()->user()->tenant_id)->exists();
+    }
+
+    private function autorizarGestionVentas(): void
+    {
+        $this->autorizarVentas();
+
+        $puedeGestionar = auth()->user()->roles()
+            ->whereIn('roles.slug', ['admin', 'gerente'])
+            ->wherePivot('tenant_id', auth()->user()->tenant_id)
+            ->exists();
+
+        abort_unless($puedeGestionar, 403);
+    }
+
     private function autorizarVentas(): void
     {
         $user = auth()->user();
@@ -346,12 +485,13 @@ class Index extends Component
             ->where('activo', true)->whereHas('establecimiento', fn ($query) => $query->where('activo', true))->find($this->almacen);
         $admin = $user->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists();
         $sales = $user->roles()->where('roles.slug', 'ventas')->wherePivot('tenant_id', $tenantId)->exists();
+        $manager = $user->roles()->where('roles.slug', 'gerente')->wherePivot('tenant_id', $tenantId)->exists();
         $assigned = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)->where('usuario_id', $user->getKey())
             ->where('establecimiento_id', $this->establecimiento)->exists();
         $assignedWarehouse = DB::table('usuario_almacen')->where('tenant_id', $tenantId)->where('usuario_id', $user->getKey())
             ->where('almacen_id', $this->almacen)->exists();
 
-        abort_unless($hasRole && $warehouse !== null && ($admin || ($sales ? $assignedWarehouse : $assigned)), 403);
+        abort_unless($hasRole && $warehouse !== null && (! $manager || $user->puede_ver_punto_venta) && ($admin || ($sales ? $assignedWarehouse : $assigned)), 403);
     }
 
     public function render()

@@ -150,13 +150,14 @@ class Show extends Component
         $warehouse = Almacen::query()->where('tenant_id', $tenantId)->where('establecimiento_id', $this->establecimiento)
             ->where('activo', true)->whereHas('establecimiento', fn ($query) => $query->where('activo', true))->find($this->almacen);
         $admin = $user->roles()->where('roles.slug', 'admin')->wherePivot('tenant_id', $tenantId)->exists();
+        $manager = $user->roles()->where('roles.slug', 'gerente')->wherePivot('tenant_id', $tenantId)->exists();
         $isWarehouseOperator = $user->roles()->where('roles.slug', 'almacen')->wherePivot('tenant_id', $tenantId)->exists();
         $assigned = DB::table('usuario_establecimiento')->where('tenant_id', $tenantId)->where('usuario_id', $user->getKey())
             ->where('establecimiento_id', $this->establecimiento)->exists();
         $warehouseAssigned = DB::table('usuario_almacen')->where('tenant_id', $tenantId)
             ->where('usuario_id', $user->getKey())->where('almacen_id', $this->almacen)->exists();
 
-        abort_unless($hasRole && $warehouse !== null && ($admin || ($isWarehouseOperator ? $warehouseAssigned : $assigned)), 403);
+        abort_unless($hasRole && $warehouse !== null && (! $manager || $user->puede_ver_almacen) && ($admin || ($isWarehouseOperator ? $warehouseAssigned : $assigned)), 403);
     }
 
     public function render()
