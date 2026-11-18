@@ -75,6 +75,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'debe_cambiar_password' => 'boolean',
             'activo' => 'boolean',
             'puede_ver_punto_venta' => 'boolean',
             'puede_ver_almacen' => 'boolean',

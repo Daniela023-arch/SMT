@@ -34,9 +34,9 @@ Route::post('/webhooks/mercadopago', MercadoPagoWebhookController::class)
 Route::middleware(['auth', 'active', 'verified', 'tenant.onboarding'])->group(function (): void {
     Route::livewire('/configuracion-inicial', Onboarding::class)->name('onboarding.show');
     Route::get('/configuracion-inicial/checkout-preview', MercadoPagoSimulacionController::class)->name('onboarding.simulacion');
-    Route::get('dashboard', TenantDashboardController::class)->name('dashboard');
+    Route::get('dashboard', TenantDashboardController::class)->middleware('password.changed')->name('dashboard');
 
-    Route::prefix('superadmin')->middleware('role:superadmin')->group(function (): void {
+    Route::prefix('superadmin')->middleware(['password.changed', 'role:superadmin'])->group(function (): void {
         Route::livewire('/', SuperadminDashboard::class)->name('superadmin.dashboard');
         Route::livewire('/solicitudes', SuperadminSolicitudes::class)->name('superadmin.solicitudes');
         Route::livewire('/tenants', SuperadminTenants::class)->name('superadmin.tenants');
@@ -50,7 +50,7 @@ Route::middleware(['auth', 'active', 'verified', 'tenant.onboarding'])->group(fu
         Route::livewire('/configuracion', SuperadminConfiguracion::class)->name('superadmin.configuracion');
     });
 
-    Route::middleware(['tenant', 'tenant.active', 'subscription.active'])->group(function (): void {
+    Route::middleware(['password.changed', 'tenant', 'tenant.active', 'subscription.active'])->group(function (): void {
         Route::livewire('personal', TenantUsuarios::class)
             ->middleware('role:admin,gerente')
             ->name('tenant.usuarios');

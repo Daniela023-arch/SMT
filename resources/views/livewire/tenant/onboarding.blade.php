@@ -2,19 +2,19 @@
     <div class="mx-auto max-w-4xl">
         <header class="mb-8">
             <p class="text-sm font-semibold uppercase tracking-[.18em] text-blue-700 dark:text-blue-300">Primer acceso</p>
-            <h1 class="mt-2 text-3xl font-bold">Personaliza {{ $tenant->nombre }}</h1>
-            <p class="mt-2 max-w-2xl text-slate-600 dark:text-slate-300">Configura la identidad visual, importa tu catálogo si ya lo tienes y termina con el pago del plan para activar el espacio.</p>
+            <h1 class="mt-2 text-3xl font-bold">{{ auth()->user()->debe_cambiar_password ? 'Protege tu cuenta' : 'Personaliza '.$tenant->nombre }}</h1>
+            <p class="mt-2 max-w-2xl text-slate-600 dark:text-slate-300">{{ auth()->user()->debe_cambiar_password ? 'Antes de configurar tu espacio y continuar al pago, cambia la contraseña temporal de tu cuenta.' : 'Configura la identidad visual, importa tu catálogo si ya lo tienes y termina con el pago del plan para activar el espacio.' }}</p>
         </header>
 
         <div class="mb-8 px-1" aria-label="Pasos de configuración">
-            <div class="relative grid grid-cols-3">
-                <div class="absolute left-[16.666%] right-[16.666%] top-5 h-1 rounded-full bg-slate-200 dark:bg-slate-700" aria-hidden="true">
-                    <div class="h-full rounded-full bg-blue-600 transition-[width] duration-500 ease-out dark:bg-blue-400" style="width: {{ (($paso - 1) / 2) * 100 }}%"></div>
+            <div class="relative flex flex-row justify-between">
+                <div class="absolute left-[12.5%] right-[12.5%] top-5 h-1 rounded-full bg-slate-200 dark:bg-slate-700" aria-hidden="true">
+                    <div class="h-full rounded-full bg-blue-600 transition-[width] duration-500 ease-out dark:bg-blue-400" style="width: {{ (($paso - 1) / 3) * 100 }}%"></div>
                 </div>
-                @foreach ([1 => 'Personalización', 2 => 'Catálogo', 3 => 'Pago y activación'] as $numero => $etiqueta)
+                @foreach ([1 => 'Seguridad', 2 => 'Personalización', 3 => 'Catálogo', 4 => 'Pago y activación'] as $numero => $etiqueta)
                     @php($completado = $paso > $numero)
                     @php($actual = $paso === $numero)
-                    <div class="relative flex flex-col items-center gap-2 text-center" @if($actual) aria-current="step" @endif>
+                    <div class="relative flex w-1/4 flex-col items-center gap-2 text-center" @if($actual) aria-current="step" @endif>
                         <span class="grid size-10 place-items-center rounded-full border-2 text-sm font-bold transition-all duration-300 {{ $completado || $actual ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-700/20 dark:border-blue-400 dark:bg-blue-500' : 'border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-400' }}">{{ $numero }}</span>
                         <span class="text-xs font-semibold sm:text-sm {{ $actual ? 'text-blue-800 dark:text-blue-300' : ($completado ? 'text-slate-700 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400') }}">{{ $etiqueta }}</span>
                     </div>
@@ -24,7 +24,32 @@
 
         @if ($suscripcion)
             <section class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
-                @if ($paso === 1)
+                @if ($paso === 1 && auth()->user()->debe_cambiar_password)
+                <form wire:submit="cambiarPasswordInicial" class="space-y-6">
+                    <div>
+                        <span class="grid size-11 place-items-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"><svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 4v3"/></svg></span>
+                        <h2 class="mt-4 text-lg font-semibold">Crea tu contraseña personal</h2>
+                        <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">La contraseña temporal solo sirve para este primer acceso. Define una nueva para proteger tu cuenta antes de configurar y pagar el servicio.</p>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="grid gap-1.5 text-sm font-semibold">Nueva contraseña
+                            <input type="password" wire:model="password" autocomplete="new-password" required class="min-h-11 rounded-xl border-slate-300 bg-white px-3.5 text-sm font-normal dark:border-slate-700 dark:bg-slate-950" placeholder="Escribe una contraseña segura">
+                            @error('password')<span class="text-xs font-medium text-red-600">{{ $message }}</span>@enderror
+                        </label>
+                        <label class="grid gap-1.5 text-sm font-semibold">Confirma la contraseña
+                            <input type="password" wire:model="password_confirmation" autocomplete="new-password" required class="min-h-11 rounded-xl border-slate-300 bg-white px-3.5 text-sm font-normal dark:border-slate-700 dark:bg-slate-950" placeholder="Repite la contraseña">
+                        </label>
+                    </div>
+                    <div class="flex justify-end border-t border-slate-100 pt-5 dark:border-slate-800">
+                        <button type="submit" wire:loading.attr="disabled" wire:target="cambiarPasswordInicial" class="rounded-lg bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-60">
+                            <span wire:loading.remove wire:target="cambiarPasswordInicial">Guardar contraseña y continuar</span>
+                            <span wire:loading wire:target="cambiarPasswordInicial">Guardando…</span>
+                        </button>
+                    </div>
+                </form>
+                @endif
+
+                @if ($paso === 2)
                 <div>
                     <h2 class="text-lg font-semibold">Identidad de tu empresa</h2>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Elige una de estas cuatro combinaciones para personalizar los colores del espacio.</p>
@@ -61,7 +86,7 @@
                 </div>
                 @endif
 
-                @if ($paso === 2)
+                @if ($paso === 3)
                 <div class="border-t border-slate-100 pt-6 dark:border-slate-800">
                     <h2 class="text-lg font-semibold">Carga masiva de productos <span class="text-sm font-normal text-slate-500">(opcional)</span></h2>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Sube un CSV de hasta 5,000 filas. SKU existente se actualiza en este tenant; filas inválidas se reportan sin detener las demás.</p>
@@ -79,7 +104,7 @@
                 </div>
                 @endif
 
-                @if ($paso === 3)
+                @if ($paso === 4)
                 <div class="border-t border-slate-100 pt-6 dark:border-slate-800">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
@@ -114,14 +139,14 @@
                 @endif
 
                 <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
-                    @if ($paso > 1)
+                    @if ($paso > 2)
                         <button type="button" wire:click="regresarPaso" class="rounded-lg border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Anterior</button>
                     @else
                         <span></span>
                     @endif
-                    @if ($paso < 3)
+                    @if ($paso >= 2 && $paso < 4)
                         <button type="button" wire:click="avanzar" wire:loading.attr="disabled" class="rounded-lg bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-60">
-                            <span wire:loading.remove wire:target="avanzar">{{ $paso === 1 ? 'Continuar' : 'Guardar y continuar' }}</span>
+                            <span wire:loading.remove wire:target="avanzar">{{ $paso === 2 ? 'Continuar' : 'Guardar y continuar' }}</span>
                             <span wire:loading wire:target="avanzar">Guardando…</span>
                         </button>
                     @endif

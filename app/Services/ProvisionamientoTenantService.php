@@ -84,6 +84,7 @@ class ProvisionamientoTenantService
                 'name' => $adminNombre,
                 'email' => $email,
                 'password' => $passwordTemporal,
+                'debe_cambiar_password' => true,
                 'tenant_id' => $tenant->getKey(),
                 'activo' => true,
                 'email_verified_at' => now(),

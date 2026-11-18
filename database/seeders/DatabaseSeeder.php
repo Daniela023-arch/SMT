@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
                 SuperadminDemoSeeder::class,
                 PlanesDemoSeeder::class,
                 TenantDemoSeeder::class,
+                DatosOperativosDemoSeeder::class,
                 TenantsMaquetacionSeeder::class,
                 SolicitudesDemoSeeder::class,
                 PromocionesDemoSeeder::class,

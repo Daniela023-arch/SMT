@@ -7,6 +7,7 @@ use App\Models\SuscripcionTenant;
 use App\Services\ImportadorCatalogoTenantService;
 use App\Services\MercadoPagoSuscripcionService;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -25,6 +26,10 @@ class Onboarding extends Component
     ];
 
     public int $paso = 1;
+
+    public string $password = '';
+
+    public string $password_confirmation = '';
 
     public ?string $paletaSeleccionada = 'azul';
 
@@ -46,7 +51,12 @@ class Onboarding extends Component
 
     public function avanzar(ImportadorCatalogoTenantService $importador): void
     {
-        if ($this->paso === 1) {
+        if (auth()->user()->debe_cambiar_password) {
+            $this->addError('password', 'Cambia tu contraseña temporal para continuar.');
+            return;
+        }
+
+        if ($this->paso === 2) {
             $this->validate([
                 'paletaSeleccionada' => ['required', Rule::in(array_keys(self::PALETAS))],
                 'logo' => ['nullable', 'image', 'max:3072'],
@@ -54,23 +64,47 @@ class Onboarding extends Component
 
             $this->aplicarPaletaSeleccionada();
 
-            $this->paso = 2;
+            $this->paso = 3;
             return;
         }
 
-        if ($this->paso === 2) {
+        if ($this->paso === 3) {
             $this->guardarPersonalizacion($importador);
-            $this->paso = 3;
+            $this->paso = 4;
         }
+    }
+
+    public function cambiarPasswordInicial(): void
+    {
+        $user = auth()->user();
+        abort_unless($user?->debe_cambiar_password, 403);
+
+        $validated = $this->validate([
+            'password' => ['required', 'string', Password::defaults(), 'confirmed'],
+        ], [
+            'password.confirmed' => 'La confirmación no coincide con la nueva contraseña.',
+        ]);
+
+        $user->forceFill([
+            'password' => $validated['password'],
+            'debe_cambiar_password' => false,
+        ])->save();
+
+        $this->reset('password', 'password_confirmation');
+        $this->resetValidation();
+        $this->paso = 2;
     }
 
     public function regresarPaso(): void
     {
-        $this->paso = max(1, $this->paso - 1);
+        $pasoMinimo = auth()->user()->debe_cambiar_password ? 1 : 2;
+        $this->paso = max($pasoMinimo, $this->paso - 1);
     }
 
     public function seleccionarPaleta(string $paleta): void
     {
+        abort_if(auth()->user()->debe_cambiar_password, 403);
+
         if (! array_key_exists($paleta, self::PALETAS)) {
             $this->addError('paletaSeleccionada', 'Selecciona una de las cuatro paletas disponibles.');
             return;
@@ -92,6 +126,7 @@ class Onboarding extends Component
     {
         $user = auth()->user();
         abort_if($user?->tenant_id === null, 403);
+        $this->paso = $user->debe_cambiar_password ? 1 : 2;
         $configuracion = ConfiguracionTenant::query()->firstOrCreate(
             ['tenant_id' => $user->tenant_id],
             ['preferencias' => ['personal_habilitado' => false]],
@@ -109,6 +144,8 @@ class Onboarding extends Component
 
     public function guardarPersonalizacion(ImportadorCatalogoTenantService $importador): void
     {
+        abort_if(auth()->user()->debe_cambiar_password, 403);
+
         $this->validate([
             'paletaSeleccionada' => ['required', Rule::in(array_keys(self::PALETAS))],
             'colorPrimario' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
@@ -155,6 +192,8 @@ class Onboarding extends Component
 
     public function iniciarPago(MercadoPagoSuscripcionService $mercadoPago, ImportadorCatalogoTenantService $importador)
     {
+        abort_if(auth()->user()->debe_cambiar_password, 403);
+
         $this->guardarPersonalizacion($importador);
         $subscription = SuscripcionTenant::query()->with('plan')
             ->where('tenant_id', auth()->user()->tenant_id)->latest('id')->firstOrFail();
@@ -174,6 +213,8 @@ class Onboarding extends Component
 
     public function revisarPago(MercadoPagoSuscripcionService $mercadoPago): void
     {
+        abort_if(auth()->user()->debe_cambiar_password, 403);
+
         $subscription = SuscripcionTenant::query()->where('tenant_id', auth()->user()->tenant_id)->latest('id')->firstOrFail();
         if ($subscription->proveedor !== 'mercadopago' || ! $subscription->suscripcion_externa_id) {
             $this->errorPago = 'Aún no hay un intento de pago para revisar.';

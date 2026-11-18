@@ -9,6 +9,7 @@ use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsureEstablishmentAccess;
 use App\Http\Middleware\EnsureModuleEnabled;
+use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsurePlanLimit;
 use App\Http\Middleware\EnsureSubscriptionActive;
 use App\Http\Middleware\EnsureTenant;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'active' => EnsureActiveUser::class,
+            'password.changed' => EnsurePasswordChanged::class,
             'tenant' => EnsureTenant::class,
             'tenant.active' => EnsureTenantActive::class,
             'tenant.onboarding' => EnsureTenantOnboardingComplete::class,

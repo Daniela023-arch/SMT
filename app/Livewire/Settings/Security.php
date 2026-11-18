@@ -31,6 +31,8 @@ class Security extends Component
      */
     public function updatePassword(): void
     {
+        $cambioObligatorio = (bool) Auth::user()->debe_cambiar_password;
+
         try {
             $validated = $this->validate([
                 'current_password' => $this->currentPasswordRules(),
@@ -44,10 +46,17 @@ class Security extends Component
 
         Auth::user()->update([
             'password' => $validated['password'],
+            'debe_cambiar_password' => false,
         ]);
 
         $this->reset('current_password', 'password', 'password_confirmation');
 
-        Flux::toast(variant: 'success', text: __('Password updated.'));
+        Flux::toast(variant: 'success', text: $cambioObligatorio
+            ? 'Contraseña actualizada. Ya puedes continuar con la configuración de tu tenant.'
+            : __('Password updated.'));
+
+        if ($cambioObligatorio) {
+            $this->redirectRoute('onboarding.show', navigate: true);
+        }
     }
 }
