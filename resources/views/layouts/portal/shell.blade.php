@@ -1,6 +1,6 @@
 {{--
 |--------------------------------------------------------------------------
-| PLANTILLA PORTAL PRIVADO — Inventra SaaS
+| PLANTILLA PORTAL PRIVADO — MULTIVERSE SaaS
 |--------------------------------------------------------------------------
 | Uso:  <x-layouts::portal.shell :title="'Dashboard'" :activeSection="'dashboard'">
 |           <x-slot:subNav>
@@ -29,11 +29,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 
-    <title>{{ filled($title) ? $title.' — '.config('app.name', 'Inventra') : config('app.name', 'Inventra') }}</title>
-
-    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <title>{{ filled($title) ? $title.' — '.config('app.name', 'MULTIVERSE') : config('app.name', 'MULTIVERSE') }}</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     {{-- Fuente: Plus Jakarta Sans (Google Fonts CDN) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -64,15 +61,9 @@
                              alt="{{ auth()->user()->tenant->name }}"
                              class="h-8 w-auto object-contain rounded" />
                     @else
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700 group-hover:bg-brand-600 transition-colors"
-                             style="{{ auth()->user()?->tenant?->primary_color ? 'background-color:'.auth()->user()->tenant->primary_color : '' }}">
-                            <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                        </div>
+                        <x-app-logo-icon class="size-8 shrink-0" />
                         <span class="text-sm font-semibold text-brand-800 max-w-[140px] truncate">
-                            {{ auth()->user()?->tenant?->name ?? config('app.name', 'Inventra') }}
+                            {{ auth()->user()?->tenant?->name ?? config('app.name', 'MULTIVERSE') }}
                         </span>
                     @endif
                 </a>
@@ -334,7 +325,7 @@
 
             <div class="flex h-14 items-center justify-between border-b border-slate-100 px-4">
                 <span class="text-sm font-semibold text-brand-800">
-                    {{ auth()->user()?->tenant?->name ?? config('app.name', 'Inventra') }}
+                    {{ auth()->user()?->tenant?->name ?? config('app.name', 'MULTIVERSE') }}
                 </span>
                 <button @click="open = false" class="inventra-icon-btn" aria-label="Cerrar menú">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

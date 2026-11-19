@@ -23,6 +23,7 @@
         pendingWaits += 1;
         if (pendingWaits !== 1) return;
 
+        //Hace que la opcion "cargando" se muestre después de 140ms
         clearTimeout(loaderTimer);
         loaderTimer = setTimeout(() => {
             if (pendingWaits > 0) revealPageLoader();

@@ -16,10 +16,7 @@
 
             <section class="relative z-20 hidden w-[58%] flex-col justify-between px-12 py-10 lg:flex xl:px-20">
                 <a href="{{ route('home') }}" wire:navigate class="inline-flex w-fit items-center gap-3" aria-label="MULTIVERSE, volver al inicio">
-                    <span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-700 text-white shadow-sm">
-                        <svg viewBox="0 0 32 32" class="h-7 w-7" fill="none" aria-hidden="true"><path d="m16 3 11 6.2v13.6L16 29 5 22.8V9.2L16 3Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="m5.8 9.7 10.2 5.8 10.2-5.8M16 15.5V28" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>
-                    </span>
-                    <span class="text-2xl font-extrabold tracking-tight text-slate-950">MULTIVERSE</span>
+                    <x-multiverse-logo class="h-10 w-auto" />
                 </a>
 
                 <div class="max-w-[34rem] pb-12 pl-1 xl:pb-16">
@@ -32,8 +29,8 @@
 
             <section class="relative z-20 ml-auto flex min-h-screen w-full items-center justify-center bg-white/95 px-5 py-8 backdrop-blur-sm sm:px-10 lg:w-[42%] lg:bg-white/90 xl:px-14">
                 <div class="w-full max-w-md">
-                    <a href="{{ route('home') }}" wire:navigate class="mb-8 inline-flex items-center gap-2 font-extrabold tracking-tight text-slate-950 lg:hidden">
-                        <span class="grid h-9 w-9 place-items-center rounded-lg bg-indigo-700 text-white">M</span>MULTIVERSE
+                    <a href="{{ route('home') }}" wire:navigate class="mb-8 inline-flex items-center" aria-label="MULTIVERSE, volver al inicio">
+                        <x-multiverse-logo class="h-9 w-auto" />
                     </a>
                     <div class="rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_20px_70px_-24px_rgba(15,23,42,.24)] sm:p-9">
                         {{ $slot }}

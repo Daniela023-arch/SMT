@@ -13,7 +13,7 @@
     <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div class="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 md:px-8">
             <a href="{{ route('home') }}" class="flex items-center gap-2 font-extrabold tracking-tight text-slate-900" wire:navigate>
-                <span class="grid h-9 w-9 place-items-center rounded-xl bg-indigo-700 text-white">M</span><span class="text-xl">MULTIVERSE</span>
+                <x-multiverse-logo class="h-9 w-auto" />
             </a>
             <nav class="hidden items-center gap-1 lg:flex" aria-label="Navegación principal">
                 <a class="rounded-full px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100" href="{{ route('home') }}#inicio">Inicio</a>
@@ -31,7 +31,7 @@
     {{ $slot }}
     <footer class="bg-slate-950 text-white">
         <div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-3 md:px-8">
-            <div><div class="text-xl font-extrabold">MULTIVERSE</div><p class="mt-3 max-w-sm text-sm leading-6 text-slate-400">Control de inventario, ventas y operación para ferreterías con una o varias sucursales.</p></div>
+            <div><x-multiverse-logo class="h-9 w-auto rounded bg-white px-2" /><p class="mt-3 max-w-sm text-sm leading-6 text-slate-400">Control de inventario, ventas y operación para ferreterías con una o varias sucursales.</p></div>
             <div><h2 class="font-semibold">Explora</h2><div class="mt-3 grid gap-2 text-sm text-slate-400"><a href="{{ route('home') }}#funcionalidades">Funcionalidades</a><a href="{{ route('home') }}#planes">Planes</a><a href="{{ route('public.solicitar') }}" wire:navigate>Solicitar información</a></div></div>
             <p class="text-sm text-slate-400">Tu solicitud se revisa antes de activar un espacio de trabajo. La contratación y configuración se confirman contigo.</p>
         </div>

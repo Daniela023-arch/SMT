@@ -30,18 +30,18 @@
 
             <div class="relative space-y-2">
                 <label for="password" class="text-sm font-semibold text-slate-800">Contraseña</label>
-                <flux:input
+                <input
                     name="password"
                     id="password"
                     type="password"
                     required
                     autocomplete="current-password"
                     placeholder="Ingresa tu contraseña"
-                    class="pr-12"
+                    class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
                 <button
                     type="button"
-                    data-password-toggle="password"
+                    data-login-password-toggle
                     aria-controls="password"
                     aria-label="Mostrar contraseña"
                     aria-pressed="false"
@@ -57,7 +57,10 @@
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <flux:checkbox name="remember" label="Recordarme" :checked="old('remember')" />
+                <label for="remember" class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
+                    <input id="remember" name="remember" type="checkbox" value="1" @checked(old('remember')) class="size-4 rounded border-slate-300 text-indigo-700 focus:ring-indigo-600" />
+                    <span>Recordarme</span>
+                </label>
                 @if (Route::has('password.request'))
                     <a class="text-xs font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-4 hover:text-indigo-900" href="{{ route('password.request') }}" wire:navigate>¿Olvidaste tu contraseña?</a>
                 @endif
@@ -68,4 +71,23 @@
             </flux:button>
         </form>
     </div>
+
+    <script>
+        (() => {
+            const toggle = document.querySelector('[data-login-password-toggle]');
+            const input = document.getElementById('password');
+
+            if (!toggle || !input) return;
+
+            toggle.addEventListener('click', () => {
+                const showPassword = input.type === 'password';
+                input.type = showPassword ? 'text' : 'password';
+                toggle.setAttribute('aria-pressed', String(showPassword));
+                toggle.setAttribute('aria-label', showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                toggle.querySelector('[data-password-icon="show"]')?.classList.toggle('hidden', showPassword);
+                toggle.querySelector('[data-password-icon="hide"]')?.classList.toggle('hidden', !showPassword);
+                input.focus({ preventScroll: true });
+            });
+        })();
+    </script>
 </x-layouts::auth.login>

@@ -9,9 +9,8 @@
 <body class="min-h-screen bg-[#eef2f8] text-slate-900 antialiased">
     <header class="border-b border-slate-200 bg-white">
         <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-            <a href="{{ route('onboarding.show') }}" class="flex items-center gap-2 font-bold text-slate-900" aria-label="Volver a MULTIVERSE">
-                <span class="grid size-8 place-items-center rounded-lg bg-blue-700 text-white"><svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/></svg></span>
-                MULTIVERSE
+            <a href="{{ route('onboarding.show') }}" class="flex items-center" aria-label="Volver a MULTIVERSE">
+                <x-multiverse-logo class="h-9 w-auto" />
             </a>
             <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">Simulación local · sin cobro</span>
         </div>

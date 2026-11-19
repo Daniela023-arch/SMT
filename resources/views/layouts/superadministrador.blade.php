@@ -74,11 +74,8 @@
 
     <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-xl">
         <div class="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-4 px-4 md:px-10">
-            <a href="{{ route('superadmin.dashboard') }}" wire:navigate class="flex items-center gap-2 font-extrabold tracking-tight text-blue-800" aria-label="MULTIVERSE, panel global">
-                <span class="grid size-8 place-items-center rounded-lg bg-blue-800 text-white">
-                    <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="m4 12 8 4 8-4M4 16l8 4 8-4"/></svg>
-                </span>
-                <span class="text-xl">MULTIVERSE</span>
+            <a href="{{ route('superadmin.dashboard') }}" wire:navigate class="flex items-center" aria-label="MULTIVERSE, panel global">
+                <x-multiverse-logo class="h-9 w-auto" />
             </a>
 
             <div class="flex items-center gap-1.5">

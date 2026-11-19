@@ -1,6 +1,6 @@
 {{--
 |--------------------------------------------------------------------------
-| PLANTILLA PÚBLICA — Inventra SaaS
+| PLANTILLA PÚBLICA — MULTIVERSE SaaS
 |--------------------------------------------------------------------------
 | Uso:  <x-layouts::public.base :title="'Inicio'" :activeNav="'inicio'">
 |           <x-slot:hero> ... </x-slot:hero>   ← opcional
@@ -23,13 +23,11 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="{{ $metaDescription ?? 'Inventra — Plataforma SaaS inteligente para administrar inventarios de múltiples negocios.' }}" />
+    <meta name="description" content="{{ $metaDescription ?? 'MULTIVERSE — Plataforma SaaS para administrar inventarios de múltiples ferreterías.' }}" />
 
-    <title>{{ filled($title) ? $title.' — '.config('app.name', 'Inventra') : config('app.name', 'Inventra') }}</title>
+    <title>{{ filled($title) ? $title.' — '.config('app.name', 'MULTIVERSE') : config('app.name', 'MULTIVERSE') }}</title>
 
-    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     {{-- Fuente: Plus Jakarta Sans (Google Fonts CDN) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -51,13 +49,7 @@
 
                 {{-- LOGOTIPO --}}
                 <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2 group" wire:navigate>
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700 group-hover:bg-brand-600 transition-colors">
-                        <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                    </div>
-                    <span class="text-xl font-bold tracking-tight text-brand-800">Inventra</span>
+                    <x-multiverse-logo class="h-9 w-auto" />
                 </a>
 
                 {{-- NAVEGACIÓN CENTRADA (desktop) --}}
@@ -179,15 +171,7 @@
 
                 {{-- Columna marca --}}
                 <div class="md:col-span-2">
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500">
-                            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                        </div>
-                        <span class="text-lg font-bold">Inventra</span>
-                    </div>
+                    <div class="mb-4 inline-flex rounded bg-white px-2 py-1"><x-multiverse-logo class="h-9 w-auto" /></div>
                     <p class="text-sm text-brand-300 max-w-xs leading-relaxed">
                         Plataforma inteligente y adaptable para administrar productos, existencias,
                         ventas, préstamos y operaciones desde un solo lugar.
@@ -219,7 +203,7 @@
 
             <div class="mt-10 border-t border-brand-700 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <p class="text-xs text-brand-400">
-                    &copy; {{ date('Y') }} {{ config('app.name', 'Inventra') }}. Todos los derechos reservados.
+                    &copy; {{ date('Y') }} {{ config('app.name', 'MULTIVERSE') }}. Todos los derechos reservados.
                 </p>
                 <p class="text-xs text-brand-500">Versión 1.0</p>
             </div>

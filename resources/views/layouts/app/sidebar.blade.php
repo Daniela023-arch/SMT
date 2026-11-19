@@ -62,11 +62,11 @@
                     @if ($tenant?->configuracionTenant?->logotipo)
                         <img src="{{ str_starts_with($tenant->configuracionTenant->logotipo, 'http') ? $tenant->configuracionTenant->logotipo : \Illuminate\Support\Facades\Storage::disk('public')->url($tenant->configuracionTenant->logotipo) }}" alt="" class="size-8 shrink-0 rounded-lg object-contain" />
                     @else
-                        <span class="grid size-8 shrink-0 place-items-center rounded-lg text-white" style="background:linear-gradient(140deg,var(--tenant-primary),var(--tenant-secondary))">
-                            <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="m4 12 8 4 8-4M4 16l8 4 8-4"/></svg>
-                        </span>
+                        <x-multiverse-logo class="h-9 w-auto" />
                     @endif
-                    <span class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">MULTIVERSE</span>
+                    @if ($tenant?->configuracionTenant?->logotipo)
+                        <span class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">MULTIVERSE</span>
+                    @endif
                 </a>
 
                 <div class="flex min-w-0 items-center gap-2">

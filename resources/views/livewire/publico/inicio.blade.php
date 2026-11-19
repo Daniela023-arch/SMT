@@ -33,8 +33,23 @@
     <section id="funcionalidades" class="mx-auto max-w-7xl px-4 py-20 md:px-8">
         <div class="max-w-2xl"><span class="text-sm font-bold uppercase tracking-wider text-indigo-700">Operación conectada</span><h2 class="mt-3 text-3xl font-extrabold tracking-tight md:text-4xl">Todo tu inventario, con contexto de cada sucursal</h2><p class="mt-4 leading-7 text-slate-600">Consulta el catálogo compartido y conserva el control de existencias, movimientos y permisos en cada ubicación.</p></div>
         <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            @foreach ([['▦','Existencias por almacén','Consulta cantidades, mínimos y movimientos asociados a cada ubicación.'],['↗','Transferencias trazables','Registra envíos entre sucursales y da seguimiento a su recepción.'],['▤','Ventas e historial','Mantén los movimientos de venta vinculados con el inventario.'],['◇','Roles y permisos','Organiza el acceso del equipo según su responsabilidad.']] as [$icon,$title,$text])
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-xl font-bold text-indigo-700">{{ $icon }}</span><h3 class="mt-5 font-bold">{{ $title }}</h3><p class="mt-2 text-sm leading-6 text-slate-600">{{ $text }}</p></article>
+            @foreach ([['stock','Existencias por almacén','Consulta cantidades, mínimos y movimientos asociados a cada ubicación.'],['transfer','Transferencias trazables','Registra envíos entre sucursales y da seguimiento a su recepción.'],['sales','Ventas e historial','Mantén los movimientos de venta vinculados con el inventario.'],['roles','Roles y permisos','Organiza el acceso del equipo según su responsabilidad.']] as [$icon,$title,$text])
+                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                    <span class="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-700" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            @if($icon === 'stock')
+                                <path d="M3.75 7.5 12 3l8.25 4.5L12 12 3.75 7.5Z"/><path d="M3.75 7.5v9L12 21l8.25-4.5v-9M12 12v9"/><path d="m7.9 5.25 8.2 4.5"/>
+                            @elseif($icon === 'transfer')
+                                <path d="M4 7h14m0 0-3-3m3 3-3 3M20 17H6m0 0 3 3m-3-3 3-3"/><path d="M4 7v3m16 4v3"/>
+                            @elseif($icon === 'sales')
+                                <path d="M6 3.75h12v16.5l-3-1.9-3 1.9-3-1.9-3 1.9V3.75Z"/><path d="M9 8h6m-6 4h6m-6 4h3"/>
+                            @else
+                                <path d="M12 3 20 6v5.5c0 4.3-3 7.5-8 9.5-5-2-8-5.2-8-9.5V6l8-3Z"/><path d="m8.8 11.8 2.1 2.1 4.5-4.5"/>
+                            @endif
+                        </svg>
+                    </span>
+                    <h3 class="mt-5 font-bold">{{ $title }}</h3><p class="mt-2 text-sm leading-6 text-slate-600">{{ $text }}</p>
+                </article>
             @endforeach
         </div>
     </section>
